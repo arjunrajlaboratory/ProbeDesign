@@ -1,0 +1,13 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tns="tns" xmlns:bow="bowtiescreeninput">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <tns:screen_seqence>
+         <!--Optional:-->
+         <tns:input>
+            <bow:mer_length>5</bow:mer_length>
+            <bow:seq_database>humanMito</bow:seq_database>
+            <bow:inseq>atttctagcggcgattatctgacgcgcatctagctagctgacgcggcgattatcgatcgtagctacgt</bow:inseq>
+         </tns:input>
+      </tns:screen_seqence>
+   </soapenv:Body>
+</soapenv:Envelope>

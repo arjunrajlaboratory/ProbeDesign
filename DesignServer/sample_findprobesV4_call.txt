@@ -1,0 +1,23 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tns="tns" xmlns:fin="findprobesinput">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <tns:design_probes>
+         <!--Optional:-->
+         <tns:input>
+            <fin:oligo_length>20</fin:oligo_length>
+            <fin:maskingflag>1</fin:maskingflag>
+            <fin:probeprefix>testCall</fin:probeprefix>
+            <fin:spacer_length>2</fin:spacer_length>
+            <fin:inseq>>testseqs
+gtaagacaagcttgggctggcgattcacccagggggcttggtaagacgtg
+ggcaggggaccttgaaatccgctggagtccaggaaacaggcacaattatt
+agaaaagcaggaagcccgatagaagacttagggtggcggggagacaaact
+aagatcgtgaggtaactagcctttgccggggtcagaacagatggaggaga
+tggaggggtcatctccaggagtatgggactgtcggtgcactgcatacggg
+</fin:inseq>
+            <fin:noligos>48</fin:noligos>
+            <fin:species>human</fin:species>
+         </tns:input>
+      </tns:design_probes>
+   </soapenv:Body>
+</soapenv:Envelope>

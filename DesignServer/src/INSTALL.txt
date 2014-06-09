@@ -1,0 +1,276 @@
+
+#=============
+# mod_python
+#=============
+
+(2011-08-30 Marshall J. Levesque on Mac OS X 10.6)
+
+Got latest version (3.3.1) from http://www.modpython.org/ and ran:
+----------------------------------------------------------------
+$ tar xzf mod_python-3.3.1.tgz
+cd mod_python-3.3.1
+./configure --with-apxs=/usr/sbin/apxs --prefix=/usr/libexec/apache2/
+make
+
+### GOT AN ERROR ###:
+---------------------
+"""
+6  -c -o serverobject.lo serverobject.c && touch serverobject.slo
+serverobject.c:387: warning: initialization from incompatible pointer type
+/usr/share/apr-1/build-1/libtool --silent --mode=compile gcc    -DDARWIN -DSIGPROCMASK_SETS_THREAD_MASK -I/usr/local/include -I/usr/include/apache2  -I/usr/include/apr-1   -I/usr/include/apr-1  -I/Users/marshall/rajlab/sequenceanalysis/DesignServer/src/mod_python-3.3.1/src/include -I/usr/include/apache2 -I/System/Library/Frameworks/Python.framework/Versions/2.6/include/python2.6  -c -o connobject.lo connobject.c && touch connobject.slo
+connobject.c: In function ‘_conn_read’:
+connobject.c:142: error: request for member ‘next’ in something not a structure or union
+apxs:Error: Command failed with rc=65536
+.
+make[1]: *** [mod_python.so] Error 1
+make: *** [do_dso] Error 2
+"""
+
+found a solution here: https://issues.apache.org/jira/browse/MODPYTHON-249
+--------------------------------------------------------------------------
+Recommended fix:
+You can download the source and implement a suggested fix - on line 142 of
+connobject.c you can replace 
+!(b == APR_BRIGADE_SENTINEL(b) ||
+with 
+!(b == APR_BRIGADE_SENTINEL(bb) ||
+
+
+Made the edit and ran the commands:
+------------------------------------
+$ ./configure --with-apxs=/usr/sbin/apxs --prefix=/usr/libexec/apache2/
+$ make
+$ sudo make install_dso
+
+
+Edited /etc/httpd.conf to include mod_python
+--------------------------------------------
+""" 
+LoadModule rewrite_module libexec/apache2/mod_rewrite.so
+LoadModule bonjour_module     libexec/apache2/mod_bonjour.so
+LoadModule php5_module        libexec/apache2/libphp5.so
+#LoadModule fastcgi_module     libexec/apache2/mod_fastcgi.so
+
+# ADDED BY MARSHALL J LEVESQUE
+LoadModule python_module libexec/apache2/mod_python.so
+"""
+
+#================================================
+# mod_wsgi (better performance than mod_python)
+#================================================
+
+(2011-08-30 Marshall J. Levesque on Mac OS X 10.6)
+
+Got latest version (3.3) from http://code.google.com/p/modwsgi/:
+----------------------------------------------------------------
+The developer provides a pre-built mod_wsgi.so file that was made
+against the versions of python (2.6) and apache (2.2) that ship
+with MacOS X 10.6 
+
+Edited /etc/httpd.conf to include mod_python
+--------------------------------------------
+""" 
+LoadModule bonjour_module     libexec/apache2/mod_bonjour.so
+LoadModule php5_module        libexec/apache2/libphp5.so
+#LoadModule fastcgi_module     libexec/apache2/mod_fastcgi.so
+
+# ADDED BY MARSHALL J LEVESQUE
+LoadModule python_module libexec/apache2/mod_python.so
+LoadModule wsgi_module   libexec/apache2/mod_wsgi.so
+"""
+
+
+
+#================
+# CherryPy 3.2.0
+#================
+
+(2011-08-30 Marshall J. Levesque on Mac OS X 10.6)
+
+Installed latest version from http://www.cherrypy.org/wiki/CherryPyDownload
+------------------------------------------------------------------------------
+$ tar tar xzf CherryPy-3.2.0.tar.gz 
+$ cd CherryPy-3.2.0
+$ sudo python setup.py install
+  ....
+Installed /Library/Python/2.6/site-packages/CherryPy-3.2.0-py2.6.egg
+Processing dependencies for CherryPy==3.2.0
+Finished processing dependencies for CherryPy==3.2.0
+
+Ran the tutorial helloworld script in the install destination
+--------------------------------------------------------------
+$ cd /Library/Python/2.6/site-packages/
+$ cd CherryPy-3.2.0-py2.6.egg/cherrypy/tutorial
+$ python tut01_helloworld.py
+[30/Aug/2011:16:52:24] ENGINE Listening for SIGHUP.
+[30/Aug/2011:16:52:24] ENGINE Listening for SIGTERM.
+[30/Aug/2011:16:52:24] ENGINE Listening for SIGUSR1.
+[30/Aug/2011:16:52:24] ENGINE Bus STARTING
+[30/Aug/2011:16:52:24] ENGINE Started monitor thread '_TimeoutMonitor'.
+[30/Aug/2011:16:52:24] ENGINE Started monitor thread 'Autoreloader'.
+[30/Aug/2011:16:52:24] ENGINE Serving on 127.0.0.1:8080
+[30/Aug/2011:16:52:24] ENGINE Bus STARTED
+
+Pointing a browser to http://127.0.0.1:8080 got me a "Hello World!" message
+
+
+#==================================================
+# Setting up CherryPy and mod_wsgi to work together
+#==================================================
+
+Reading material to figure out this solution:
+---------------------------------------------
+* Running CherryPy behind Apache using Mod_WSGI 
+    (http://tools.cherrypy.org/wiki/ModWSGI)
+* mod_wsgi Quick Configuration Guide
+    (http://code.google.com/p/modwsgi/wiki/QuickConfigurationGuide)
+
+Objective is to setup an Apache virtualhost to use 'mod_wsgi' 
+--------------------------------------------------------------
+I edited the /etc/httpd.conf file so that the server runs a virtualhost on port 80
+
+<VirtualHost *:80>
+    ServerAdmin levesque@seas.upenn.edu
+    ServerName 127.0.0.1:80
+
+    DocumentRoot "/Library/WebServer/Documents"
+
+    <Directory />
+        Options FollowSymLinks
+        AllowOverride None
+        Order deny,allow
+        Deny from all
+    </Directory>
+
+    <Directory "/Library/WebServer/Documents">
+        Options Indexes FollowSymLinks MultiViews
+        AllowOverride None
+        Order allow,deny
+        Allow from all
+    </Directory>
+
+    WSGIScriptAlias /myapp /Library/WebServer/CGI-Executables/myapp.wsgi
+
+    # Note: always put executables outside of document root so clients 
+    #   cannot see the source text of executable files
+    <Directory "/Library/WebServer/CGI-Executables/">
+        Order allow,deny
+        Allow from all
+    </Directory>
+
+</VirtualHost>
+
+
+Run 'myapp.wsgi' example using CherryPy and mod_wsgi
+------------------------------------------------------
+Created 'myapp.wsgi' in /Library/WebServer/CGI-Executables/ with contents:
+
+"""
+import sys
+sys.stdout = sys.stderr
+
+import atexit
+import threading
+import cherrypy
+
+cherrypy.config.update({'environment': 'embedded'})
+
+if cherrypy.__version__.startswith('3.0') and cherrypy.engine.state == 0:
+    cherrypy.engine.start(blocking=False)
+    atexit.register(cherrypy.engine.stop)
+
+class Root(object):
+    def index(self):
+        return 'Hello World, things seem to be working!'
+    index.exposed = True
+
+application = cherrypy.Application(Root(), script_name=None, config=None)
+"""
+
+Restarted Apache and then pointed my browser to "http://localhost/myapp" and
+everything works fine!
+
+
+
+#===========================
+# lxml (soaplib dependency)
+#===========================
+
+Checking for requirements listed here: http://lxml.de/installation.html
+-----------------------------------------------------------------------
+Python 2.3 or later - CHECK
+libxml 2.6.21 or later - using cmd "$ php -i" for phpinfo() I found that libxml 2.7.3 
+    is installed and the path is /usr/lib/libxml2.2.7.3.dylib@ -> libxml2.2.dylib
+libxslt 1.1.15 or later - using cmd "$ php -i" for phpinfo() I found that libxslt 1.1.24
+    is installed and the path is /usr/lib/libxslt.1.dylib
+
+Recommendations for more recent versions are for bug fixes only 
+
+Using 'easy_install' method for installation, building from source produced errors
+-----------------------------------------------------------------------------------
+Trying to build from source produced errors about not being able to find the lxml.etree.c
+file. This has something to do with how lxml uses Cython and to get around requiring users
+to have Cython installed, they claim to distribute the pre-generated C-files. I didn't see
+any *.c files, but there were *.pxi files. They look like C. Maybe I should have changed
+their file extensions to *.c (that's for another day)
+
+Using the command:
+    '$ sudo easy_install --allow-hosts=lxml.de,*.python.org lxml==2.2.2'
+Output about downloading lxml 2.2.2 from a server and then running the setup.py and then 
+there was a long (2-3min) build process using 'cc1' according to Activity Monitor.
+Ended with the lines: 
+"""
+Processing lxml-2.2.2-py2.6-macosx-10.6-universal.egg
+Adding lxml 2.2.2 to easy-install.pth file
+
+Using /Library/Python/2.6/site-packages/lxml-2.2.2-py2.6-macosx-10.6-universal.egg
+Processing dependencies for lxml==2.2.2
+Finished processing dependencies for lxml==2.2.2
+"""
+
+Installation was confirmed on the python prompt with a sucessful '>>> import lxml'
+
+
+#===========================
+# pytz (soaplib dependency)
+#===========================
+
+Using easy_install as described here: http://pytz.sourceforge.net/
+-----------------------------------------------------------------------------
+$ sudo easy_install --upgrade pytz
+Password:
+Searching for pytz
+Reading http://pypi.python.org/simple/pytz/
+Reading http://pytz.sourceforge.net
+Reading http://sourceforge.net/project/showfiles.php?group_id=79122
+Reading http://www.stuartbishop.net/Software/pytz
+Reading http://sourceforge.net/projects/pytz/
+Best match: pytz 2011h
+Downloading http://pypi.python.org/packages/2.6/p/pytz/pytz-2011h-py2.6.egg#md5=08c3a6fd7576facd0b133128f29ae78e
+Processing pytz-2011h-py2.6.egg
+Moving pytz-2011h-py2.6.egg to /Library/Python/2.6/site-packages
+Removing pytz 2011g from easy-install.pth file
+Adding pytz 2011h to easy-install.pth file
+
+Installed /Library/Python/2.6/site-packages/pytz-2011h-py2.6.egg
+Processing dependencies for pytz
+Finished processing dependencies for pytz
+
+
+#========================
+# soaplib version 1.0.0
+#========================
+
+Processing soaplib-1.0.0-py2.6.egg
+creating /Library/Python/2.6/site-packages/soaplib-1.0.0-py2.6.egg
+Extracting soaplib-1.0.0-py2.6.egg to /Library/Python/2.6/site-packages
+Adding soaplib 1.0.0 to easy-install.pth file
+
+Installed /Library/Python/2.6/site-packages/soaplib-1.0.0-py2.6.egg
+
+
+
+
+
+
+
