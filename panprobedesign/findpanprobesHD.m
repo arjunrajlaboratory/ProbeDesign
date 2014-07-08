@@ -123,7 +123,7 @@ for i = 1:length(bestSolution)
     scores(i) = computeOligoMatchScore(bestSolution(i).finalScoreInfo.matchVector,targetMinNumOligos);
 end;
 
-inds = find(scores > 100);
+inds = find(scores < 1000000);
 finalNumOligos = max(inds);
 
 fprintf('Found a total of %d oligos...\n',finalNumOligos);
