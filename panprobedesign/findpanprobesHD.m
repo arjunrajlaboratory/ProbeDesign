@@ -66,7 +66,7 @@ end
 
 bmsf(1,1).position = 1;
 [bmsf(1,1).matchVector,bmsf(1,1).whichOligo] = ...
-    selectBestPanOligoFromCandidates([],sequenceCrossMatches(1,:,:),whichOligosAreGood(1,:),targetMinNumOligos);
+    selectBestPanOligoFromCandidates([],sequenceCrossMatches(1,:,:),whichOligosAreGood(:,1),targetMinNumOligos);
 for i = 2:maxNumOligos  % For position 1, set score for all higher numbers of oligos to nan
     bmsf(1,i).position = nan;
     bmsf(1,i).matchVector = zeros(size(bmsf(1,1).matchVector));
@@ -123,7 +123,7 @@ for i = 1:length(bestSolution)
     scores(i) = computeOligoMatchScore(bestSolution(i).finalScoreInfo.matchVector,targetMinNumOligos);
 end;
 
-inds = find(scores < 1000000);
+inds = find(scores < Inf);
 finalNumOligos = max(inds);
 
 fprintf('Found a total of %d oligos...\n',finalNumOligos);

@@ -6,6 +6,7 @@ function [newMatchVector, whichOligo] = selectBestPanOligoFromCandidates(prevMat
 % previous oligo solution set has to the various target sequence variants.
 
 % candidateMatchMatrix is a e.g. 27x27 matrix of matches.  It is symmetric.
+
 whichOligosAreGoodVector = squeeze(whichOligosAreGoodVector);
 candidateMatchMatrix = squeeze(candidateMatchMatrix);
 
@@ -14,9 +15,6 @@ numberOfSeqs = length(candidateMatchMatrix(:,1));
 if isempty(prevMatchVector)
     prevMatchVector = zeros(numberOfSeqs,1);
 end;
-
-candidateMatchMatrix = squeeze(candidateMatchMatrix);
-whichOligosAreGoodVector = squeeze(whichOligosAreGoodVector);
 
 updatedMatchMatrix = zeros(size(candidateMatchMatrix));
 
