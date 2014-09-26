@@ -13,4 +13,4 @@ function matchScore = computeOligoMatchScore(matchVector,targetMinNumOligos)
 
 matchVector = squeeze(matchVector);
 mx = targetMinNumOligos * ones(size(matchVector));
-matchScore = prod(min(matchVector+1,mx));
+matchScore = prod(min(matchVector+1,mx+1));
