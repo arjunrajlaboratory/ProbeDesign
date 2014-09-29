@@ -11,6 +11,7 @@ whichOligosAreGoodVector = squeeze(whichOligosAreGoodVector);
 candidateMatchMatrix = squeeze(candidateMatchMatrix);
 
 numberOfSeqs = length(candidateMatchMatrix(:,1));
+scores = ones(numberOfSeqs,1);
 
 if isempty(prevMatchVector)
     prevMatchVector = zeros(numberOfSeqs,1);
@@ -19,12 +20,10 @@ end;
 updatedMatchMatrix = zeros(size(candidateMatchMatrix));
 
 for i = 1:numberOfSeqs
-    updatedMatchMatrix(:,i) = prevMatchVector + candidateMatchMatrix(:,i);
-    scores(i) = computeOligoMatchScore(updatedMatchMatrix(:,i),targetMinNumOligos);
-    if ~whichOligosAreGoodVector(i)
-        scores(i) = 0;
-        updatedMatchMatrix(:,i) = 0;
-    end;
+    if whichOligosAreGoodVector(i)       
+        updatedMatchMatrix(:,i) = prevMatchVector + candidateMatchMatrix(:,i);
+        scores(i) = computeOligoMatchScore(updatedMatchMatrix(:,i),targetMinNumOligos);
+    end;    
 end;
 
 [~,idx] = max(scores);
