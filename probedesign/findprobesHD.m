@@ -77,7 +77,7 @@ p.addParamValue('GCrunmask',false,@islogical);
 p.addParamValue('GCmask',false,@islogical);
 
 p.addParamValue('thermoparams','RNA',@(x)any(strcmpi(x,possibleThermoParams)));
-p.addParamValue('targetGibbsFE',-23,@(x)validateattributes(x,{'numeric'},{'negative'}));
+p.addParamValue('targetGibbsFE',-23,@(x)validateattributes(x,{'numeric'},{'<', 0}));
 p.addParamValue('allowableGibbsFE',[-26,-20],@(x)validateattributes(x,{'numeric'},{'size',[1 2]}));
 
 p.addParamValue('masksequences','',@ischar);
