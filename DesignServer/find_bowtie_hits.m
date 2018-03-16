@@ -12,7 +12,9 @@ dom = xmlread('sample_bowtie_search.txt');
 
 %endpoint = 'http://192.168.1.74:8000/service';
 %endpoint = 'http://158.130.146.251:8000/service';
-endpoint = 'http://158.130.14.49:8000/service';
+%endpoint = 'http://158.130.14.49:8000/service';
+endpoint = 'http://158.130.14.239:8000/service';
+
 
 ch = dom.getElementsByTagName('bow:mer_length');
 it = ch.item(0);
