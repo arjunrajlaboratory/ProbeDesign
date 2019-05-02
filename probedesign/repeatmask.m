@@ -145,29 +145,36 @@ pause(5);
 if status == 0
     error('Unable to retrieve results from RepeatMasker.org');
 else
+    summary_text = regexp(page,'</h2><PRE>(.+ version \d+).*</PRE>','tokens');
     % If the job is still running, the URL should have pointed to an 
-    % empty endpoint, so we can just pause for 5sec and retry
-    while isempty(page)
+    % empty endpoint, so we can just pause for 5sec and retry.
+    % What can also happen is that the page can show text
+    % that is not yet the results (Ie. summary_text is still empty)
+    % so in these cases we should wait 5sec and retry
+    
+    
+    while or(isempty(page),isempty(summary_text))
+        
+        if regexp(page,'No repetitive sequences were detected')
+            disp('No repetitive sequences were detected for the input file')
+            headers = '';
+            masked_sequences = '';
+            return
+        end
+        
         disp('Results not available yet, retrying in 5 sec');
         pause(5);
         [page,status] = urlread(resultURL);
         if status == 0
             error('Unable to retrieve results from RepeatMasker.org');
         end
+        summary_text = regexp(page,'</h2><PRE>(.+ version \d+).*</PRE>','tokens');
     end
 end
 
 %----------------------------------------------------------------------
 % Search the results page URL to find the URL of the masked FASTA file
 %----------------------------------------------------------------------
-
-% But first check if we had no repetitive sequences
-if regexp(page,'No repetitive sequences were detected')
-    disp('No repetitive sequences were detected for the input file')
-    headers = '';
-    masked_sequences = '';
-    return 
-end
 
 % Let's also print out the summary information
 summary_text = regexp(page,'</h2><PRE>(.+ version \d+).*</PRE>','tokens');
