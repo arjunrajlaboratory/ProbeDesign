@@ -279,23 +279,27 @@ badness = badness + GCmask + GCrunmask + other_seq_mask'; % In this case, we jus
 output = find_best_matches(badness,goodlen,oligolen+blocklen,noligos);
 
 noligos = length(output);
-currmatches = output(end).matches;
 
-
-outoligofile = [outfile '_oligos.txt'];
-outseqfile = [outfile '_seq.txt'];
-
-if strcmp(p.Results.thermoparams,'DNA')
-    oligos = generate_oligo_file(inseq,oligolen,currmatches,outfile,outoligofile);
-    align_oligo_file(inseq,maskseqs,oligolen,currmatches,outfile,outseqfile);
+if noligos==0
+    fprintf('\n************* COULD NOT FIND ANY OLIGOS for %s *************\n\n',outfile)
 else
-    oligos = generate_oligo_file_RNA_DNA(inseq,oligolen,currmatches,outfile,outoligofile);
-    align_oligo_file_RNA_DNA(inseq,maskseqs,oligolen,currmatches,outfile,outseqfile);
+    currmatches = output(end).matches;
+    
+    
+    outoligofile = [outfile '_oligos.txt'];
+    outseqfile = [outfile '_seq.txt'];
+    
+    if strcmp(p.Results.thermoparams,'DNA')
+        oligos = generate_oligo_file(inseq,oligolen,currmatches,outfile,outoligofile);
+        align_oligo_file(inseq,maskseqs,oligolen,currmatches,outfile,outseqfile);
+    else
+        oligos = generate_oligo_file_RNA_DNA(inseq,oligolen,currmatches,outfile,outoligofile);
+        align_oligo_file_RNA_DNA(inseq,maskseqs,oligolen,currmatches,outfile,outseqfile);
+    end
+    
+    
+    fprintf('Done. Fo real.\n');
 end
-
-
-fprintf('Done. Fo real.\n');
-
 
 
 
