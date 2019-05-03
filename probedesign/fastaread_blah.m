@@ -64,6 +64,9 @@ else  % must be a string with '\n', convert to cell
     ftext = strread(filename,'%s','delimiter','\n');
 end
 
+% may need to remove carriage returns in ftext: sprintf('\r') or char(13)
+ftext=strrep(ftext,sprintf('\r'),'');
+
 % it is possible that there will be multiple sequences
 commentLines = strncmp(ftext,'>',1);
 
