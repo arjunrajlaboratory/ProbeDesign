@@ -53,14 +53,18 @@ end
 
 p = inputParser;
 
-p.addRequired('infile',@ischar);
+p.addRequired('infile',@(x)ischar(x)|isstruct(x));
 p.addOptional('noligos',48,@(x)validateattributes(x,{'numeric'},{'positive','integer'}));
 
 p.addParamValue('targetTM',67.5,@(x)validateattributes(x,{'numeric'},{'positive'}));
 p.addParamValue('spacerlength',2,@(x)validateattributes(x,{'numeric'},{'positive','integer'}));
 p.addParamValue('oligolength',20,@(x)validateattributes(x,{'numeric'},{'positive','integer'}));
 
-[~,tmp,~] = fileparts(infile);
+if ischar(infile)
+    [~,tmp,~] = fileparts(infile);
+else
+    tmp = 'temp';
+end
 p.addParamValue('outfilename',tmp,@ischar);
 
 otherSpecies = {'human','mouse','drosophila','elegans','rat','cow','off'};
@@ -99,7 +103,12 @@ noligos = p.Results.noligos;
 % Read the FASTA input file containing the template strand sequences
 %-------------------------------------------------------------------
 
-[headers, seqs] = fastaread_blah(infile);
+if ischar(infile)
+    [headers, seqs] = fastaread_blah(infile);
+elseif isstruct(infile)
+    headers = infile.Header;
+    seqs = infile.Sequence;
+end
 
 s = multiseq_singlestring(seqs);
     
@@ -137,9 +146,13 @@ if p.Results.repeatmask
     fullmask = fullmask + hitsRM';
     maskseqs = [maskseqs mask_string(inseq,hitsRM,'R')];
     
-end;
+end
 
-fileString = text_to_string(infile);
+if ischar(infile)
+    fileString = text_to_string(infile);
+else
+    fileString = ['>' infile.Header newline infile.Sequence];
+end
 
 
 if p.Results.pseudogenemask
@@ -171,7 +184,7 @@ if p.Results.pseudogenemask
     maskseqs = [maskseqs mask_string(inseq,hitsPseudo,'P')];
 
     fprintf('Done sequence searching, finding probe positions...\n');
-end;
+end
 
 
 if p.Results.genomemask
@@ -186,7 +199,7 @@ if p.Results.genomemask
     
     if strcmpi(db,'elegans')  % This is a kludge--bowtie requires celegans, not elegans
         db = 'celegans';
-    end;
+    end
     
     hitsGen1 = hits_to_mask(fileString,12,db,4000);
     hitsGen2 = hits_to_mask(fileString,14,db,500);
@@ -204,7 +217,7 @@ if p.Results.genomemask
     
     maskseqs = [maskseqs mask_string(inseq,hitsGenome,'B')];
     
-end;
+end
 
 GCrunmask = zeros(length(inseq),1);
 if p.Results.GCrunmask
@@ -230,7 +243,7 @@ if p.Results.GCrunmask
 
     GCrunmask(Crunbadness>0) = inf;
     GCrunmask(Grunbadness>0) = inf;
-end;
+end
 
 if p.Results.GCmask
     % Mask "unbalanced oligos" with too many Gs, Cs.
@@ -248,7 +261,7 @@ if p.Results.GCmask
     %want to put this directly into the badness, not as a mask.
 else
     GCmask = zeros(length(inseq),1);
-end;
+end
 GCmask(GCmask>0) = inf;
 
 if ~isempty(p.Results.masksequences)
@@ -261,7 +274,7 @@ if ~isempty(p.Results.masksequences)
     maskseqs = [maskseqs mask_string(inseq,other_seq_mask==Inf,'M')];
 else
     other_seq_mask = zeros(1,length(inseq));
-end;
+end
 
 
 
