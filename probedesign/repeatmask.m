@@ -80,10 +80,14 @@ function [headers, masked_sequences] = repeatmask(infile, dnasource)
 
 % GN changed this so that it works if you put in a sequence string instead
 % of a filename too.
-if ~isempty(dir(infile(1:min(256,length(infile)))));
-    contents = fileread(infile);
+if isstruct(infile) % i.e., if you already have a fasta struct
+    contents = infile.Sequence;
 else
-    contents = infile;
+    if ~isempty(dir(infile(1:min(256,length(infile)))))
+        contents = fileread(infile);
+    else
+        contents = infile;
+    end
 end
     
 % acceptable options for DNA source (from the HTML of RepeatMasker form)
@@ -129,10 +133,14 @@ end
 
 % GN added this line to change depending on whether a sequence or a
 % filename is specified.
-if ~isempty(dir(infile(1:min(256,length(infile)))));
-    disp(['RepeatMasker job is running for ' infile])
-else
+if isstruct(infile) % i.e., if you already have a fasta struct
     disp(['RepeatMasker job is running for entered sequence'])
+else
+    if ~isempty(dir(infile(1:min(256,length(infile)))))
+        disp(['RepeatMasker job is running for ' infile])
+    else
+        disp(['RepeatMasker job is running for entered sequence'])
+    end
 end
 
 
