@@ -16,22 +16,28 @@ def find_bowtie():
     
     There are common places the user may have bowtie installed and we can
     check for these, or the user can specify the path to bowtie. Our order
-    of preference in searching for bowtie is:
+    of preference in searching for bowtie is (updated 11/30/2021):
         1. /usr/bin/bowtie
         2. $BOWTIEHOME/bowtie (user sets envrionment variable in .bashrc etc)
         3. $HOME/bowtie/bowtie (try users home dir)
-        4  search the current working directory (not sure how useful this is)
+        4. $HOME/Dropbox (RajLab)/probeDesign/bowtie/bowtie (Rajlab Dropbox)
+        5. $HOME/Downloads/bowtie/bowtie (try users Downloads dir)
+        6  search the current working directory (not sure how useful this is)
     """
-    
     if os.sep == '/':  # Unix, Linux, MacOS X
         default = '/usr/bin/bowtie'
-        if os.environ.has_key('BOWTIEHOME'):  
-            bowtiedir = os.environ['BOWTIEHOME'] + os.sep + 'bowtie' 
+        homeDir =  os.environ['HOME']
+        if os.environ.has_key('BOWTIEHOME'):
+            bowtiedir = os.environ['BOWTIEHOME'] + os.sep + 'bowtie'
         else:
-            bowtiedir = os.path.join(os.environ['HOME'],'bowtie','bowtie')
+            bowtiedir = os.path.join(homeDir,'bowtie','bowtie')
+        bowtiedir2 = os.path.join(homeDir,'Dropbox (RajLab)','probeDesign','bowtie','bowtie')
+        bowtiedir3 = os.path.join(homeDir,'Downloads','bowtie','bowtie')
         curdir = os.getcwd() + os.sep + 'bowtie'  # current working dir
         if os.path.exists(default): btpath = default
         elif os.path.exists(bowtiedir): btpath = bowtiedir
+        elif os.path.exists(bowtiedir2): btpath = bowtiedir2
+        elif os.path.exists(bowtiedir3): btpath = bowtiedir3
         elif os.path.exists(curdir): btpath = curdir
         else:
             msg =  "Could not find the bowtie executable!\n" 
