@@ -19,7 +19,7 @@
 #--------------
 # Bowtie setup:
 #--------------
-Download the pre-built binary from sourceforge () or from the Raj lab Dropbox at https://www.dropbox.com/sh/6n354swv2t74lp2/AABKoCIPjeLytwasW61APoqxa?dl=0 (assuming the link has not rotted). If needed, unzip the download, change the name of the folder to 'bowtie' (e.g. bowtie-0.12.7 -> bowtie) and move the folder to one of these paths: /usr/bin/bowtie, $HOME/bowtie, $HOME/Dropbox (RajLab)/probeDesign/bowtie, or $HOME/Downloads/bowtie. On a Mac, you can rename & move a folder in the terminal by typing (for example): mv -R /original/path/bowtie-0.12.7 $HOME/Downloads/bowtie
+Download the pre-built binary from sourceforge at https://sourceforge.net/projects/bowtie-bio/files/bowtie/ or from the Raj lab Dropbox at https://www.dropbox.com/sh/6q1bnpl60r24byz/AAAGFIxAGV4PKK6qmk--8WDZa?dl=0 (assuming the link has not rotted). If needed, unzip the download, change the name of the folder to 'bowtie' (e.g. bowtie-0.12.7 -> bowtie) and move the folder to one of these paths: /usr/bin/bowtie, $HOME/bowtie, $HOME/Dropbox (RajLab)/probeDesign/bowtie, or $HOME/Downloads/bowtie. On a Mac, you can rename & move a folder in the terminal by typing (for example): mv -R /original/path/bowtie-0.12.7 $HOME/Downloads/bowtie
 
 In the terminal on Mac, you can check the installation by typing: $HOME/Downloads/bowtie -h 
 You should see:
@@ -27,7 +27,7 @@ You should see:
   bowtie [options]* <ebwt> {-1 <m1> -2 <m2> | --12 <r> | <s>} [<hit>]" 
 followed by a long list of options
 
-The bowtie binary download from Dropbox (https://www.dropbox.com/sh/6n354swv2t74lp2/AABKoCIPjeLytwasW61APoqxa?dl=0) includes several pre-indexed genomes & sequence databases. These include all the genomes & sequence databases on the Rajlab probe design server. If you downloaded bowtie from sourceforge, you may copy the indexes from Dropbox (https://www.dropbox.com/sh/81dpffus03h0ctu/AABt-TgJgIfoaWxqV--IijkMa?dl=0) to the indexes/ subdirectory within your bowtie folder. To build a new index, use the bowtie-build function (see instructions at http://bowtie-bio.sourceforge.net/manual.shtml). Note, however, that by default the probe design software only accepts the names of genomes & sequences database installed on the probe design server (see the list of names assigned to 'okdnasource' in findprobesHD.m). If you'd like to mask probes that align to a different reference sequence, try using the 'masksequences' parameter.   
+The bowtie binary download from Dropbox (https://www.dropbox.com/sh/6q1bnpl60r24byz/AAAGFIxAGV4PKK6qmk--8WDZa?dl=0) includes several pre-indexed genomes & sequence databases. These include all the genomes & sequence databases on the Rajlab probe design server. If you downloaded bowtie from sourceforge, you may copy the indexes from Dropbox (https://www.dropbox.com/sh/81dpffus03h0ctu/AABt-TgJgIfoaWxqV--IijkMa?dl=0) to the indexes/ subdirectory within your bowtie folder. To build a new index, use the bowtie-build function (see instructions at http://bowtie-bio.sourceforge.net/manual.shtml). Note, however, that by default the probe design software only accepts the names of genomes & sequences database installed on the probe design server (see the list of names assigned to 'okdnasource' in findprobesHD.m). If you'd like to mask probes that align to a different reference sequence, try using the 'masksequences' parameter.   
 
 #--------------------------
 # Running FindprobesLocal.m:
