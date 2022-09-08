@@ -27,7 +27,7 @@ def find_bowtie():
     if os.sep == '/':  # Unix, Linux, MacOS X
         default = '/usr/bin/bowtie'
         homeDir =  os.environ['HOME']
-        if os.environ.has_key('BOWTIEHOME'):
+        if 'BOWTIEHOME' in os.environ:
             bowtiedir = os.environ['BOWTIEHOME'] + os.sep + 'bowtie'
         else:
             bowtiedir = os.path.join(homeDir,'bowtie','bowtie')
@@ -121,7 +121,7 @@ def runbowtie(args,reads):
     
     # create a subprocess and execute the bowtie search. Have bowtie print
     # to standard out and capture that to parse out the information we want
-    bwtjob = Popen(args,stdin=PIPE,stdout=PIPE)
+    bwtjob = Popen(args,stdin=PIPE,stdout=PIPE, universal_newlines=True)
     stdoe = bwtjob.communicate(reads)  # stdoe[0] = stdout  stdoe[1] = stderr
     bwtoutput = stdoe[0]
 

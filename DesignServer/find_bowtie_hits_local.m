@@ -11,7 +11,9 @@ function hts = find_bowtie_hits_local(inseq,merlength,database)
     %Add DesignServer directory path to pythonpath
     pythonScript = which('bowtie_local.py');
     [pythonScriptPath,~,~] = fileparts(pythonScript);
-    insert(py.sys.path, int32(0), pythonScriptPath)
+    if count(py.sys.path, pythonScriptPath) == 0 
+        insert(py.sys.path, int32(0), pythonScriptPath); 
+    end
     
 %     %Import python module bowtie_local
 %     bowtie_local = py.importlib.import_module('bowtie_local');

@@ -26,17 +26,17 @@ from argparse import ArgumentParser
 
 def screen_seqence(inseq,mer_length, seq_database):
 	time_str = strftime("%a, %d %b %Y %H:%M:%S", localtime())
-	print "Screen sequence request: {}".format(time_str)
+	print("Screen sequence request: {}".format(time_str))
 
 	inseq_fasta = fasta.Fasta(inseq,strflag=True)
 	hts = bowtie_search.align_for_hits(inseq_fasta,mer_length,seq_database)
 	
-	print "Successful screen"
+	print("Successful screen")
 	return hts
 
 def test_function(test_str, test_int):
 	time_str = strftime("%a, %d %b %Y %H:%M:%S", localtime())
-	print "Screen sequence request: {}".format(time_str)
+	print("Screen sequence request: {}".format(time_str))
 
 	testSeq = fasta.Fasta(test_str,strflag=True)
 	testSub = testSeq.to_substrings(test_int,'>').split('\n')

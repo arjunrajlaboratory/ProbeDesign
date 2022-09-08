@@ -18,9 +18,9 @@ def percent_masked(masked):
     """Print percentage of nucleotides masked in 'masked' string."""
     percent = float(masked.count('X')) / float((len(masked)-masked.count('>')))
     if percent == 0:
-        print "no sequences masked"
+        print("no sequences masked")
     else:
-        print "%.2f%% masked" % (100*percent)
+        print("%.2f%% masked" % (100*percent))
 
 def mask_hits(inseq,mer_length,hits,threshold):
     """Set bases of inseq to 'X' when their hit count is above threshold."""
@@ -51,14 +51,14 @@ def bowtie_align_and_mask(inseq,database,mer_length,threshold):
         threshold  - <int> number of hits that causes a subseq to be masked
 
     """
-    print "Masking for %s...\t" % database,
+    print("Masking for {}...\t".format(database))
     sys.stdout.flush()  # get the progress to print before a "lengthy" alignment
     hits = bowtie_search.align_for_hits(inseq,mer_length,database)
     mask = mask_hits(inseq,mer_length,hits,threshold)
     return mask
     
 def hits_to_mask(inseq,database,mer_length,threshold):
-    print "Masking for %s...\t" % database,
+    print("Masking for {}...\t".format(database))
     sys.stdout.flush()
     hits = bowtie_search.align_for_hits(inseq,mer_length,database)
     unmasked = inseq.one_line()
@@ -104,7 +104,7 @@ def design(inseq,noligos,oligo_length,spacer_length,maskflag,species):
             else:
                 masked_seq += unmasked_seq[i]
         
-        print "Total masking: ",
+        print("Total masking: ")
         percent_masked(masked_seq)
     else:
         masked_seq = inseq.one_line()

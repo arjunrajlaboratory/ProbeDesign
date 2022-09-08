@@ -47,7 +47,7 @@ class Fasta:
             msg = "Could not locate input Fasta file %s" % filename
             raise Exception(msg)
             
-        print "Opening file %s" % curdirpath
+        print("Opening file {}".format(curdirpath))
         f = open(curdirpath,'r')
         self.raw = f.read()
         f.close()
@@ -113,13 +113,13 @@ class Fasta:
             raise Exception('Provided n-mer length must be between 5-30')
 
         if delimchar in 'tcsn>':
-            if delimchar is 't':
+            if delimchar == 't':
                delimchar = '\t' 
-            elif delimchar is 'c':
+            elif delimchar == 'c':
                delimchar = ',' 
-            elif delimchar is 's':
+            elif delimchar == 's':
                delimchar = ' ' 
-            elif delimchar is 'n':
+            elif delimchar == 'n':
                delimchar = '\n' 
         else:
            delimchar = '>' 
