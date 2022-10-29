@@ -77,6 +77,9 @@ p.addParamValue('humanfiltermask',true,@islogical);%unused
 p.addParamValue('genomemask',true,@islogical);
 p.addParamValue('GCrunmask',false,@islogical);
 p.addParamValue('GCmask',false,@islogical);
+%BE 09/19/2022 - adding parameter below to filter probes with %GC outside
+%bounds
+p.addParameter('GCbounds', [], @(x)validateattributes(x,{'numeric'},{'>=', 0, '<=', 1, 'numel', 2}))
 
 p.addParamValue('thermoparams','RNA',@(x)any(strcmpi(x,possibleThermoParams)));
 p.addParamValue('targetGibbsFE',-23,@(x)validateattributes(x,{'numeric'},{'<', 0}));
@@ -84,7 +87,7 @@ p.addParamValue('allowableGibbsFE',[-26,-20],@(x)validateattributes(x,{'numeric'
 
 p.addParamValue('masksequences','',@ischar);
 p.addParamValue('nummatchesformask',14,@(x)validateattributes(x,{'numeric'},{'positive','integer'}));
-
+p.addParamValue('writeoutput',true,@islogical);
 
 p.parse(infile,varargin{:});
 
@@ -110,7 +113,10 @@ inseq = s;
 inseq = lower(inseq);  % convert the sequence to lowercase
 inseq = inseq(ismember(inseq,'actgxn>'));  % keeps only characters that match a c t g x n or > 
 
-
+%BE added to handle string inputs
+if isempty(dir(infile))
+    outfile = headers;
+end
 %%%%%%%%%%%%%%
 % Some basic parameters...
 oligolen = p.Results.oligolength; %shortlen = 22;
@@ -141,8 +147,11 @@ if p.Results.repeatmask
     
 end
 
-fileString = text_to_string(infile);
-
+if ischar(infile)
+    fileString = text_to_string_local(infile);
+else
+    fileString = ['>' infile.Header newline infile.Sequence];
+end
 
 if p.Results.pseudogenemask
     % Indexed values for allowed DNASource map to array of pseudogene filenames
@@ -224,15 +233,14 @@ if p.Results.GCrunmask
                                         % oligo.  The return argument
                                         % GCmask should be like this, but
                                         % just in case you're wondering why
-                                        % X locations don't "make sense"...
-    
+                                        % X locations don't "make sense"...   
     Crunbadness = mask_oligos_with_runs(inseq,'c',7,2,oligolen);
     Grunbadness = mask_oligos_with_runs(inseq,'g',7,2,oligolen);
     maskseqs = [maskseqs mask_string(inseq,Crunbadness|Grunbadness,'X')];
-
+    
     GCrunmask(Crunbadness>0) = inf;
     GCrunmask(Grunbadness>0) = inf;
-end;
+end
 
 if p.Results.GCmask
     % Mask "unbalanced oligos" with too many Gs, Cs.
@@ -250,7 +258,7 @@ if p.Results.GCmask
     %want to put this directly into the badness, not as a mask.
 else
     GCmask = zeros(length(inseq),1);
-end;
+end
 GCmask(GCmask>0) = inf;
 
 if ~isempty(p.Results.masksequences)
@@ -263,9 +271,21 @@ if ~isempty(p.Results.masksequences)
     maskseqs = [maskseqs mask_string(inseq,other_seq_mask==Inf,'M')];
 else
     other_seq_mask = zeros(1,length(inseq));
-end;
+end
 
+%BE 09/19/2022 - Added new mask
+if ~isempty(p.Results.GCbounds)
+    % Mask oligos with %GC outside bounds
+    % As with GCrunmask and GCmask
+    % This is not really a mask. It gives a score per oligo.
+    GCtotalmask = GCtotal_badness(inseq,oligolen,p.Results.GCbounds); 
+    
+    maskseqs = [maskseqs mask_string(inseq,GCtotalmask,'Z')];
 
+else
+    GCtotalmask = zeros(length(inseq),1);
+end
+GCtotalmask(GCtotalmask>0) = inf;
 
 % Done with all masking
 if strcmp(p.Results.thermoparams,'DNA')
@@ -276,7 +296,7 @@ else
 end
 
 badness = badness + mask_to_badness(fullmask,oligolen); % Want to fully block out all the truly masked sequences
-badness = badness + GCmask + GCrunmask + other_seq_mask'; % In this case, we just block out these particular oligos.
+badness = badness + GCmask + GCrunmask + other_seq_mask' + GCtotalmask; % In this case, we just block out these particular oligos.
 
 output = find_best_matches(badness,goodlen,oligolen+blocklen,noligos);
 
@@ -302,10 +322,3 @@ else
     
     fprintf('Done. Fo real.\n');
 end
-
-
-
-
-
-
-

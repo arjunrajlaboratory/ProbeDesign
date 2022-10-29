@@ -1,6 +1,6 @@
 function outhts = hits_to_mask_local(inseq,mer_length,db,threshold)
 
-hts = find_bowtie_hits_local(inseq,uint16(mer_length),db); %Note the mer_length needs to be integer for subsequent python scripts. Can change to uint32 for longer subsequences.  
+hts = find_bowtie_hits_local(inseq, mer_length,db);   
 idx = find(hts > threshold);
 
 outhts = zeros(size(hts));
