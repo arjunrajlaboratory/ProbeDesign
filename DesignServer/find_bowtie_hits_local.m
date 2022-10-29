@@ -11,23 +11,29 @@
 function hts = find_bowtie_hits_local(inseq,merlength,database)
     
     screen_seq_path = which('screen_sequence.py');
-    %Get Python executable 
-    pe = pyenv;
-    pyexe = pe.Executable;
-%     syspath = getenv('PATH');
-%     if count(syspath, pyexe) == 0
-%         newpath = sprintf('%s:%s', syspath, pyexe);
-%         setenv('PATH', newpath); 
-%     end
-    %Remove '' and "" from inseq since these will mess up the shell command
-    inseq = strrep(inseq, '''', '');
-    inseq = strrep(inseq, '"', '');
-    cmd = sprintf("%s %s '%s' '%d' '%s'", pyexe, screen_seq_path, inseq, merlength, database);
     
-    fprintf('Screen sequence request %s\n', datetime) %replacing print statements in bowtie_local.py
-    [~,stdout] = system(cmd);
-    fprintf('Successful screen\n')
-    
-    tmpHts = regexp(stdout, '[0-9]+', 'match');
-    hts = cellfun(@str2double, tmpHts');
+    pyexe = find_python_exe();
+    if pyexe == ""
+        %get inseq length for hts
+        [~, seqs] = fastaread_blah(inseq);
+        s = multiseq_singlestring(seqs);
+
+        s = lower(s);  % convert the sequence to lowercase
+        hts_length = sum(ismember(s,'actgxn>'));  % keeps only characters that match a c t g x n or > 
+
+        disp('Skipping Bowtie step')
+        hts = zeros(hts_length, 1);
+    else
+        %Remove '' and "" from inseq since these will mess up the shell command
+        inseq = strrep(inseq, '''', '');
+        inseq = strrep(inseq, '"', '');
+        cmd = sprintf("%s %s '%s' '%d' '%s'", pyexe, screen_seq_path, inseq, merlength, database);
+        
+        fprintf('Screen sequence request %s\n', datetime) %replacing print statements in bowtie_local.py
+        [~,stdout] = system(cmd);
+        disp('Successful screen')
+        
+        tmpHts = regexp(stdout, '[0-9]+', 'match');
+        hts = cellfun(@str2double, tmpHts');
+    end
 end
