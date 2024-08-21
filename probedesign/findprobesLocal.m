@@ -70,6 +70,8 @@ possibleThermoParams= {'RNA','DNA'};
 
 p.addParamValue('species','human',@(x)any(strcmpi(x,otherSpecies)));
 p.addParamValue('repeatmask',true,@islogical);
+p.addParamValue('repeatmaskmanual',false,@islogical);
+p.addParamValue('repeatmaskfile','',@ischar);
 p.addParamValue('pseudogenemask',true,@islogical);
 p.addParamValue('blastmask',true,@islogical);%unused
 p.addParamValue('miRNAmask',true,@islogical); %unused
@@ -94,8 +96,6 @@ p.parse(infile,varargin{:});
 outfile = p.Results.outfilename;
 dnasource = p.Results.species;
 noligos = p.Results.noligos;
-
-
 
 %%%%%%%%%% DONE parsing input %%%%%%%%%%%%%%%%%%
 
@@ -133,7 +133,12 @@ maskseqs = {};
 
 
 if p.Results.repeatmask
-    [headers, seqs] = repeatmask(infile,dnasource); % see repeatmask.m
+    if p.Results.repeatmaskmanual
+        [headers, seqs] = fastaread_blah(p.Results.repeatmaskfile); % feed in repeat mask file manually
+    else
+        [headers, seqs] = repeatmask(infile,dnasource); % see repeatmask.m
+    end
+    
     
     s = multiseq_singlestring(seqs);
     
