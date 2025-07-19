@@ -1,0 +1,9 @@
+# This package uses only Python standard library modules
+# No external dependencies are required
+
+# If you need to install this package in development mode:
+# pip install -e .
+
+# For future dependencies, add them here:
+# numpy>=1.19.0
+# scipy>=1.5.0
