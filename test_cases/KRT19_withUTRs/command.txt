@@ -1,0 +1,10 @@
+findprobesLocal('KRT19_withUTRs.fa',32, 'outfilename', 'KRT19_withUTRs','pseudogenemask',true,'repeatmask',false,'species','human')
+
+Parameters:
+-----------
+input_file: KRT19_withUTRs.fa
+probe_length: 32
+outfilename: KRT19_withUTRs
+pseudogenemask: true
+repeatmask: false
+species: human

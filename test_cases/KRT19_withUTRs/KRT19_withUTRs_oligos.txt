@@ -1,0 +1,6 @@
+1	55	66.2	-24.7	gtctcagaagctgcgattcg	KRT19_withUTRs_1
+2	65	63.2	-26.0	gaatgctgggcgcgcgaaag	KRT19_withUTRs_2
+3	50	68.7	-24.8	aaggcagctttcatgctcag	KRT19_withUTRs_3
+4	55	64.5	-24.6	ggaccttggaggcagacaaa	KRT19_withUTRs_4
+5	55	62.5	-23.5	ctccaaaggacagcagaagc	KRT19_withUTRs_5
+6	65	67.3	-25.9	gagaagagccgggggtaagg	KRT19_withUTRs_6

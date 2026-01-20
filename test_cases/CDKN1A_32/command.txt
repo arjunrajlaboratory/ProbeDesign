@@ -1,0 +1,11 @@
+findprobesLocal('CDKN1A.fa', 32, 'outfilename', 'CDKN1A_32','repeatmask', true,'repeatmaskmanual',true,'repeatmaskfile','CDKNA1_repeatmasked.fa','species','human')
+
+Parameters:
+-----------
+input_file: CDKN1A.fa
+probe_length: 32
+outfilename: CDKN1A_32
+repeatmask: true
+repeatmaskmanual: true
+repeatmaskfile: CDKNA1_repeatmasked.fa
+species: human
