@@ -49,6 +49,9 @@ probedesign design input.fa
 # With pseudogene and genome masking (recommended)
 probedesign design input.fa --pseudogene-mask --genome-mask --index-dir bowtie_indexes
 
+# With manual repeat masking (using RepeatMasker output)
+probedesign design input.fa --repeatmask-file input_repeatmasked.fa
+
 # Full example with all options
 probedesign design input.fa \
   --probes 48 \
@@ -83,6 +86,7 @@ Options:
                             Species for masking databases (default: human)
   --pseudogene-mask         Mask regions that align to pseudogenes
   --genome-mask             Mask repetitive genomic regions
+  --repeatmask-file PATH    FASTA file with N's marking repeat regions (manual repeat masking)
   --index-dir PATH          Directory containing bowtie indexes
 ```
 
@@ -117,6 +121,20 @@ Masks repetitive genomic regions using multiple alignment stringencies:
 - 12-mer with threshold 4000 hits (very repetitive)
 - 14-mer with threshold 500 hits
 - 16-mer with threshold 20 hits
+
+### Manual Repeat Masking (`--repeatmask-file`)
+
+For sequences with repetitive elements, you can use RepeatMasker to identify repeats and provide the masked file:
+
+1. Upload your FASTA to [RepeatMasker's website](http://www.repeatmasker.org/)
+2. Download the masked output file (contains N's where repeats are)
+3. Use the `--repeatmask-file` option:
+
+```bash
+probedesign design input.fa --repeatmask-file input_repeatmasked.fa --output MyProbes
+```
+
+This is equivalent to MATLAB's `repeatmaskmanual` option.
 
 ### Species Support
 
@@ -157,9 +175,15 @@ findprobesLocal('input.fa', 32, ...
 The automatic RepeatMasker connection no longer works. To use repeat masking:
 
 1. Upload your FASTA to [RepeatMasker's website](http://www.repeatmasker.org/)
-2. Download the masked output file
-3. Use the `repeatmaskmanual` option:
+2. Download the masked output file (contains N's where repeats were found)
+3. Use `repeatmaskmanual` in MATLAB or `--repeatmask-file` in Python:
 
+**Python (recommended):**
+```bash
+probedesign design mCherry.fasta --repeatmask-file mCherry_repeatmasked.fa --output mCherry_probes
+```
+
+**MATLAB:**
 ```matlab
 findprobesLocal('mCherry.fasta', 32, ...
     'repeatmask', true, ...

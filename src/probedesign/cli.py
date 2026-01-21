@@ -79,6 +79,12 @@ def main():
     type=click.Path(exists=True, file_okay=False),
     help='Directory containing bowtie indexes (default: auto-detect)'
 )
+@click.option(
+    '--repeatmask-file',
+    default=None,
+    type=click.Path(exists=True),
+    help='FASTA file with N\'s marking repeat regions (for manual repeat masking)'
+)
 def design(
     input_file: str,
     n_probes: int,
@@ -92,6 +98,7 @@ def design(
     pseudogene_mask: bool,
     genome_mask: bool,
     index_dir: str,
+    repeatmask_file: str,
 ):
     """Design probes for a target sequence.
 
@@ -136,6 +143,7 @@ def design(
         pseudogene_mask=pseudogene_mask,
         genome_mask=genome_mask,
         index_dir=index_dir,
+        repeatmask_file=repeatmask_file,
     )
 
     if not result.probes:

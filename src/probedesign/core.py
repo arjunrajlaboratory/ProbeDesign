@@ -214,6 +214,7 @@ def design_probes(
     pseudogene_mask: bool = False,
     genome_mask: bool = False,
     index_dir: Optional[str] = None,
+    repeatmask_file: Optional[str] = None,
 ) -> ProbeDesignResult:
     """Design oligonucleotide probes for a target sequence.
 
@@ -267,9 +268,22 @@ def design_probes(
     full_mask = [0] * len(seq)
     mask_strings = []
 
-    # Check for repeat masking from N's in input
-    if has_n_masking:
-        # Create repeat mask from N positions
+    # Handle repeat masking from separate file or from N's in input
+    if repeatmask_file:
+        # Read repeatmasked sequence from separate file
+        _, rm_seqs = read_fasta(repeatmask_file)
+        rm_full_seq = sequences_to_single_string(rm_seqs, mark_junctions=True)
+        rm_seq = clean_sequence(rm_full_seq)
+
+        # Create repeat mask from N positions in the repeatmask file
+        rmask = [1 if rm_seq[i].lower() == 'n' else 0 for i in range(len(rm_seq))]
+        rstr = "".join("R" if rmask[i] else seq[i] for i in range(len(seq)))
+        mask_strings.append(rstr)
+        for i, v in enumerate(rmask):
+            full_mask[i] += v
+        print(f"Repeat masking (from file): {sum(rmask)} positions masked")
+    elif has_n_masking:
+        # Create repeat mask from N positions in input file
         rmask = [1 if seq[i].lower() == 'n' else 0 for i in range(len(seq))]
         rstr = "".join("R" if rmask[i] else seq[i] for i in range(len(seq)))
         mask_strings.append(rstr)
