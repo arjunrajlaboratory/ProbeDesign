@@ -57,6 +57,28 @@ def main():
     is_flag=True,
     help='Suppress output to stdout'
 )
+@click.option(
+    '--species',
+    default='human',
+    type=click.Choice(['human', 'mouse', 'elegans', 'drosophila', 'rat']),
+    help='Species for masking databases (default: human)'
+)
+@click.option(
+    '--pseudogene-mask/--no-pseudogene-mask',
+    default=False,
+    help='Mask regions that align to pseudogenes (default: off)'
+)
+@click.option(
+    '--genome-mask/--no-genome-mask',
+    default=False,
+    help='Mask repetitive genomic regions (default: off)'
+)
+@click.option(
+    '--index-dir',
+    default=None,
+    type=click.Path(exists=True, file_okay=False),
+    help='Directory containing bowtie indexes (default: auto-detect)'
+)
 def design(
     input_file: str,
     n_probes: int,
@@ -66,6 +88,10 @@ def design(
     allowable_gibbs: str,
     output: str,
     quiet: bool,
+    species: str,
+    pseudogene_mask: bool,
+    genome_mask: bool,
+    index_dir: str,
 ):
     """Design probes for a target sequence.
 
@@ -78,6 +104,8 @@ def design(
         probedesign design input.fa -n 6 -l 20 -o MyProbes
 
         probedesign design input.fa --target-gibbs -23 --allowable-gibbs -26,-20
+
+        probedesign design input.fa --pseudogene-mask --species human
     """
     # Parse allowable Gibbs range
     try:
@@ -104,6 +132,10 @@ def design(
         target_gibbs=target_gibbs,
         allowable_gibbs=(min_gibbs, max_gibbs),
         output_name=output,
+        species=species,
+        pseudogene_mask=pseudogene_mask,
+        genome_mask=genome_mask,
+        index_dir=index_dir,
     )
 
     if not result.probes:
@@ -111,7 +143,7 @@ def design(
         raise SystemExit(1)
 
     # Write output files
-    write_output_files(result, output)
+    write_output_files(result, output, mask_seqs=result.mask_strings)
 
     # Print summary
     if not quiet:

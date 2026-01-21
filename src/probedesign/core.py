@@ -7,7 +7,8 @@ This module implements the main probe design logic:
 """
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 from .thermodynamics import gibbs_rna_dna, tm_rna_dna
@@ -39,6 +40,8 @@ class ProbeDesignResult:
     score: float
     input_sequence: str
     template_name: str
+    mask: Optional[List[int]] = None
+    mask_strings: List[str] = field(default_factory=list)
 
 
 def calculate_badness(
@@ -207,6 +210,10 @@ def design_probes(
     target_gibbs: float = -23.0,
     allowable_gibbs: Tuple[float, float] = (-26.0, -20.0),
     output_name: Optional[str] = None,
+    species: str = "human",
+    pseudogene_mask: bool = False,
+    genome_mask: bool = False,
+    index_dir: Optional[str] = None,
 ) -> ProbeDesignResult:
     """Design oligonucleotide probes for a target sequence.
 
@@ -221,6 +228,10 @@ def design_probes(
         target_gibbs: Target Gibbs free energy in kcal/mol (default -23)
         allowable_gibbs: (min, max) Gibbs FE range (default (-26, -20))
         output_name: Base name for output files (default: derived from input)
+        species: Species for masking databases (default: "human")
+        pseudogene_mask: Whether to mask pseudogene alignments (default: False)
+        genome_mask: Whether to mask repetitive genomic regions (default: False)
+        index_dir: Directory containing bowtie indexes (default: auto-detect)
 
     Returns:
         ProbeDesignResult containing the designed probes
@@ -243,6 +254,50 @@ def design_probes(
         seq, oligo_length, target_gibbs, allowable_gibbs
     )
 
+    # Apply masking if requested
+    full_mask = None
+    mask_strings = []
+
+    if pseudogene_mask or genome_mask:
+        from .masking import (
+            pseudogene_mask as get_pseudogene_mask,
+            genome_mask as get_genome_mask,
+            mask_to_badness,
+        )
+
+        idx_dir = Path(index_dir) if index_dir else None
+        full_mask = [0] * len(seq)
+
+        if pseudogene_mask:
+            try:
+                pmask = get_pseudogene_mask(seq, species, idx_dir)
+                for i, v in enumerate(pmask):
+                    full_mask[i] += v
+                # Create visualization string
+                pstr = "".join("P" if pmask[i] else seq[i] for i in range(len(seq)))
+                mask_strings.append(pstr)
+                print(f"Pseudogene masking: {sum(pmask)} positions masked")
+            except Exception as e:
+                print(f"Warning: Pseudogene masking failed: {e}")
+
+        if genome_mask:
+            try:
+                gmask = get_genome_mask(seq, species, idx_dir)
+                for i, v in enumerate(gmask):
+                    full_mask[i] += v
+                # Create visualization string
+                gstr = "".join("B" if gmask[i] else seq[i] for i in range(len(seq)))
+                mask_strings.append(gstr)
+                print(f"Genome masking: {sum(gmask)} positions masked")
+            except Exception as e:
+                print(f"Warning: Genome masking failed: {e}")
+
+        # Add mask to badness
+        mask_badness = mask_to_badness(full_mask, oligo_length)
+        for i in range(len(badness)):
+            if mask_badness[i] == float('inf'):
+                badness[i] = float('inf')
+
     # Find optimal probe positions
     solutions = find_best_probes(
         badness, len(seq), oligo_length, spacer_length, n_probes
@@ -254,6 +309,8 @@ def design_probes(
             score=float('inf'),
             input_sequence=seq,
             template_name=output_name,
+            mask=full_mask,
+            mask_strings=mask_strings,
         )
 
     # Use the solution with the most probes (last in list)
@@ -281,4 +338,6 @@ def design_probes(
         score=best_score,
         input_sequence=seq,
         template_name=output_name,
+        mask=full_mask,
+        mask_strings=mask_strings,
     )
