@@ -42,7 +42,7 @@ def read_fasta(filepath: str) -> Tuple[List[str], List[str]]:
     return headers, sequences
 
 
-def sequences_to_single_string(seqs: List[str]) -> str:
+def sequences_to_single_string(seqs: List[str], mark_junctions: bool = True) -> str:
     """Concatenate multiple sequences into a single string.
 
     Used when a FASTA file has multiple entries (e.g., exons)
@@ -50,11 +50,21 @@ def sequences_to_single_string(seqs: List[str]) -> str:
 
     Args:
         seqs: List of sequences
+        mark_junctions: If True and there are multiple sequences,
+            prefix each with '>' to mark exon junctions (MATLAB behavior).
+            If there's only one sequence, just prefix with '>' for the header.
 
     Returns:
-        Single concatenated sequence
+        Single concatenated sequence (with '>' at junctions if mark_junctions=True)
     """
-    return ''.join(seqs)
+    if not seqs:
+        return ''
+
+    if mark_junctions:
+        # Include '>' at the start and at each exon junction
+        return '>' + '>'.join(seqs)
+    else:
+        return ''.join(seqs)
 
 
 def write_fasta(filepath: str, headers: List[str], sequences: List[str],

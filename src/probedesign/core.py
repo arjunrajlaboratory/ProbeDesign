@@ -239,24 +239,43 @@ def design_probes(
     # Read input sequence
     headers, seqs = read_fasta(input_file)
 
-    # Concatenate multi-entry FASTA into single sequence
-    full_seq = sequences_to_single_string(seqs)
+    # Concatenate multi-entry FASTA into single sequence (with '>' marking junctions)
+    full_seq = sequences_to_single_string(seqs, mark_junctions=True)
 
-    # Clean sequence
+    # Check for N's in the sequence (indicates pre-repeatmasked input)
+    has_n_masking = 'n' in full_seq.lower()
+
+    # Clean sequence (lowercase, keep only actgn>)
     seq = clean_sequence(full_seq)
 
     # Determine output name
     if output_name is None:
         output_name = get_basename(input_file)
 
-    # Calculate badness scores
+    # Calculate badness scores (thermodynamic filtering)
     badness = calculate_badness(
         seq, oligo_length, target_gibbs, allowable_gibbs
     )
 
+    # Create F mask from initial badness==inf (thermodynamic filtering)
+    # This is done BEFORE adding masking, matching MATLAB behavior
+    # F shows positions where you CANNOT start a probe (badness==inf or past end)
+    # This matches MATLAB mask_string(inseq, badness==inf, 'F')
+    goodlen = len(badness)
+
     # Apply masking if requested
-    full_mask = None
+    full_mask = [0] * len(seq)
     mask_strings = []
+
+    # Check for repeat masking from N's in input
+    if has_n_masking:
+        # Create repeat mask from N positions
+        rmask = [1 if seq[i].lower() == 'n' else 0 for i in range(len(seq))]
+        rstr = "".join("R" if rmask[i] else seq[i] for i in range(len(seq)))
+        mask_strings.append(rstr)
+        for i, v in enumerate(rmask):
+            full_mask[i] += v
+        print(f"Repeat masking (from N's): {sum(rmask)} positions masked")
 
     if pseudogene_mask or genome_mask:
         from .masking import (
@@ -266,7 +285,6 @@ def design_probes(
         )
 
         idx_dir = Path(index_dir) if index_dir else None
-        full_mask = [0] * len(seq)
 
         if pseudogene_mask:
             try:
@@ -292,7 +310,24 @@ def design_probes(
             except Exception as e:
                 print(f"Warning: Genome masking failed: {e}")
 
-        # Add mask to badness
+    # Add F mask string (thermodynamic filtering - from badness==inf BEFORE masking)
+    # This matches MATLAB line 300: maskseqs = [maskseqs mask_string(inseq,badness==inf,'F')];
+    # Show 'F' at position i if:
+    #   - badness[i] == inf (can't start probe due to invalid chars or out-of-range Gibbs)
+    #   - i >= goodlen (past the last valid probe start position)
+    # Show sequence character at position i if badness[i] is finite (valid probe start)
+    fstr_parts = []
+    for i in range(len(seq)):
+        if i < goodlen and badness[i] != float('inf'):
+            fstr_parts.append(seq[i])
+        else:
+            fstr_parts.append('F')
+    fstr = "".join(fstr_parts)
+    mask_strings.append(fstr)
+
+    # Add mask to badness (after F mask is created)
+    if any(full_mask):
+        from .masking import mask_to_badness
         mask_badness = mask_to_badness(full_mask, oligo_length)
         for i in range(len(badness)):
             if mask_badness[i] == float('inf'):
@@ -319,7 +354,14 @@ def design_probes(
     # Generate probe objects
     probes = []
     for i, pos in enumerate(positions):
-        template_region = seq[pos:pos + oligo_length]
+        # Extract template region, skipping '>' characters
+        template_region = ""
+        j = pos
+        while len(template_region) < oligo_length and j < len(seq):
+            if seq[j] != '>':
+                template_region += seq[j]
+            j += 1
+
         probe_seq = reverse_complement(template_region)
 
         probe = Probe(

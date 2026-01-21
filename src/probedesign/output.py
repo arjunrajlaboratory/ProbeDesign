@@ -36,15 +36,19 @@ def write_seq_file(
     """Write sequence alignment visualization file.
 
     Creates a multi-line visualization showing:
-    - Original sequence
-    - Masked regions (if any)
+    - Original sequence (with '>' at exon junctions where present)
+    - Masked regions (if any) - each mask shows sequence with mask chars (P, B, R, F)
     - Probe alignments with complementary sequences
     - Probe labels
+
+    Format matches MATLAB output:
+    - No '>' prefix added to lines - the '>' only appears where it exists in the sequence
+    - Mask lines show the original sequence with masked positions replaced by mask characters
 
     Args:
         result: ProbeDesignResult from design_probes()
         filepath: Output file path
-        mask_seqs: List of mask strings (same length as sequence)
+        mask_seqs: List of mask strings (same length as sequence, with mask chars at masked positions)
         line_width: Characters per line for wrapping
     """
     seq = result.input_sequence
@@ -56,12 +60,28 @@ def write_seq_file(
 
     for probe in result.probes:
         pos = probe.position
-        comp_seq = complement(seq[pos:pos + oligo_len])
+        # Get the actual sequence at this position (skip '>' characters)
+        actual_seq = ''
+        seq_pos = pos
+        chars_collected = 0
+        while chars_collected < oligo_len and seq_pos < len(seq):
+            if seq[seq_pos] != '>':
+                actual_seq += seq[seq_pos]
+                chars_collected += 1
+            seq_pos += 1
 
-        # Place complementary sequence
-        for i, c in enumerate(comp_seq):
-            if pos + i < len(probe_align):
-                probe_align[pos + i] = c
+        comp_seq = complement(actual_seq)
+
+        # Place complementary sequence (accounting for '>' in original)
+        comp_idx = 0
+        for i in range(oligo_len + 10):  # Allow for some '>' chars
+            if pos + i >= len(probe_align):
+                break
+            if seq[pos + i] == '>':
+                continue  # Skip '>' positions
+            if comp_idx < len(comp_seq):
+                probe_align[pos + i] = comp_seq[comp_idx]
+                comp_idx += 1
 
         # Place probe label
         label = f"Prb# {probe.index},FE {probe.gibbs_fe},GC {probe.gc_percent}"
@@ -77,14 +97,14 @@ def write_seq_file(
         for start in range(0, len(seq), line_width):
             end = min(start + line_width, len(seq))
 
-            # Original sequence with > prefix
-            f.write(f">{seq[start:end]}\n")
+            # Original sequence (no prefix - '>' is already in sequence if present)
+            f.write(f"{seq[start:end]}\n")
 
             # Mask sequences if provided
             if mask_seqs:
                 for mask in mask_seqs:
                     if mask:
-                        f.write(f">{mask[start:end]}\n")
+                        f.write(f"{mask[start:end]}\n")
 
             # Probe alignment
             f.write(f"{probe_align_str[start:end]}\n")

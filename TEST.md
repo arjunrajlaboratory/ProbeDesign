@@ -10,14 +10,15 @@ Last validated: January 2025
 |-----------|---------|--------------|------------|--------|-------|
 | KRT19_withUTRs | human | 20bp | **6/6 (100%)** | ✅ PASS | Exact match with MATLAB |
 | EIF1_CDS_HCR | human | 52bp | **15/19 (79%)** | ✅ PASS | HCR probes, minor position diffs |
-| CDKN1A_32 | human | 20bp | **26/32 (81%)** | ⚠️ PARTIAL | Missing repeat masking |
+| CDKN1A_32 | human | 20bp | **27/32 (84%)** | ⚠️ PARTIAL | Use repeatmasked FASTA input |
+| CDKN1A_32 (no repeat) | human | 20bp | **26/32 (81%)** | ⚠️ PARTIAL | Without repeatmasked input |
 | mouseMITF | mouse | 20bp | Not tested | ⏸️ SKIP | Requires mouse bowtie indexes |
 
 ### Key Findings
 
 1. **Exact match achieved** for KRT19_withUTRs when using both `--pseudogene-mask` and `--genome-mask` flags
 2. **Important**: MATLAB has `genomemask=true` by default - always include `--genome-mask` to match MATLAB behavior
-3. **Repeat masking** is not yet implemented in Python; test cases requiring it will have partial matches
+3. **Repeat masking workaround**: Use pre-repeatmasked FASTA (with N's for repeats) as input - improves CDKN1A from 81% to 84% match
 4. **Thermodynamics** calculations match MATLAB exactly (Gibbs FE within 0.01 kcal/mol)
 
 ## Prerequisites
@@ -105,9 +106,29 @@ probedesign design test_cases/EIF1_CDS_HCR/EIF1_Exons.fasta \
 
 ### 3. CDKN1A_32 (Human, requires repeat masking)
 
-**Note**: This test case requires RepeatMasker, which is not yet implemented in Python. Run without repeat masking to get partial validation.
+**MATLAB command**:
+```matlab
+findprobesLocal('CDKN1A.fa', 32, ...
+    'outfilename', 'CDKN1A_32', ...
+    'repeatmask', true, ...
+    'repeatmaskmanual', true, ...
+    'repeatmaskfile', 'CDKN1A_repeatmasked.fa', ...
+    'species', 'human')
+```
 
-**Python (partial)**:
+**Workaround**: RepeatMasker is not implemented in Python. Use a pre-repeatmasked FASTA file (with N's replacing repetitive regions) as input:
+
+**Python (with repeatmasked input - 84% match)**:
+```bash
+probedesign design test_cases/CDKN1A_32/CDKN1A_repeatmasked.fa \
+  -n 32 \
+  --pseudogene-mask \
+  --genome-mask \
+  --index-dir bowtie_indexes \
+  -o CDKN1A_test
+```
+
+**Python (without repeatmasked input - 81% match)**:
 ```bash
 probedesign design test_cases/CDKN1A_32/CDKN1A.fa \
   -n 32 \
@@ -116,6 +137,8 @@ probedesign design test_cases/CDKN1A_32/CDKN1A.fa \
   --index-dir bowtie_indexes \
   -o CDKN1A_test
 ```
+
+**To create a repeatmasked FASTA**: Upload your sequence to [RepeatMasker](http://www.repeatmasker.org/cgi-bin/WEBRepeatMasker), download the masked output, and use it as input.
 
 ### 4. mouseMITF (Mouse, requires mouse indexes)
 
@@ -201,11 +224,12 @@ for seq, expected_gibbs, expected_tm in test_cases:
 
 ## Known Differences
 
-1. **Repeat masking**: Not implemented in Python. Use manual repeat masking if needed.
+1. **Repeat masking**: Not implemented natively in Python. Workaround: use a pre-repeatmasked FASTA file from [RepeatMasker](http://www.repeatmasker.org/) with N's replacing repetitive regions.
 
 2. **Minor probe position differences**: In some cases, probes may be positioned slightly differently due to:
    - Floating-point precision differences
    - Tie-breaking in the DP algorithm when multiple positions have equal badness
+   - Slightly different masking coverage
 
 3. **Default settings**: MATLAB has `genomemask=true` by default. Always use `--genome-mask` in Python to match MATLAB behavior.
 
