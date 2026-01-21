@@ -10,3 +10,8 @@ build/
 
 # macOS
 .DS_Store
+
+# Bowtie indexes (large genome files)
+bowtie_indexes/
+*.ebwt
+*.ebwtl
