@@ -48,7 +48,40 @@ Bowtie is an ultrafast, memory-efficient short read aligner used by ProbeDesign 
 Download pre-built binaries from:
 - https://sourceforge.net/projects/bowtie-bio/files/bowtie/
 
-## Genome Index Setup
+## Index Setup
+
+ProbeDesign requires two types of bowtie indexes:
+1. **Pseudogene indexes** - For `--pseudogene-mask` (e.g., `humanPseudo`)
+2. **Genome indexes** - For `--genome-mask` (e.g., `GRCh38`)
+
+### Pseudogene Indexes
+
+Pseudogene FASTA files are included in `probedesign/pseudogeneDBs/`. Build indexes from them:
+
+```bash
+# Create indexes directory
+mkdir -p bowtie_indexes
+cd bowtie_indexes
+
+# Build human pseudogene index
+bowtie-build ../probedesign/pseudogeneDBs/human.fasta humanPseudo
+
+# Build mouse pseudogene index (if needed)
+bowtie-build ../probedesign/pseudogeneDBs/mouse.fasta mousePseudo
+
+# Build other species as needed
+bowtie-build ../probedesign/pseudogeneDBs/elegans.fasta celegansPseudo
+bowtie-build ../probedesign/pseudogeneDBs/drosophila.fasta drosophilaPseudo
+```
+
+The index names must match what the code expects:
+| Species | Index Name |
+|---------|------------|
+| human | `humanPseudo` |
+| mouse | `mousePseudo` |
+| elegans | `celegansPseudo` |
+| drosophila | `drosophilaPseudo` |
+| rat | `ratPseudo` |
 
 ### Human Genome (GRCh38)
 
@@ -67,15 +100,30 @@ Download pre-built binaries from:
 
 3. **Verify the index files**:
    ```bash
-   ls -la bowtie_indexes/
-   # Should show:
-   # GCA_000001405.15_GRCh38_no_alt_analysis_set.1.ebwt
-   # GCA_000001405.15_GRCh38_no_alt_analysis_set.2.ebwt
-   # GCA_000001405.15_GRCh38_no_alt_analysis_set.3.ebwt
-   # GCA_000001405.15_GRCh38_no_alt_analysis_set.4.ebwt
-   # GCA_000001405.15_GRCh38_no_alt_analysis_set.rev.1.ebwt
-   # GCA_000001405.15_GRCh38_no_alt_analysis_set.rev.2.ebwt
+   ls bowtie_indexes/
+   # Should show (for human):
+   # GCA_000001405.15_GRCh38_no_alt_analysis_set.*.ebwt  (genome)
+   # humanPseudo.*.ebwt  (pseudogenes)
    ```
+
+### Complete Setup for Human
+
+After setup, your `bowtie_indexes/` directory should contain:
+```
+bowtie_indexes/
+├── humanPseudo.1.ebwt          # Built from probedesign/pseudogeneDBs/human.fasta
+├── humanPseudo.2.ebwt
+├── humanPseudo.3.ebwt
+├── humanPseudo.4.ebwt
+├── humanPseudo.rev.1.ebwt
+├── humanPseudo.rev.2.ebwt
+├── GCA_000001405.15_GRCh38_no_alt_analysis_set.1.ebwt   # Downloaded
+├── GCA_000001405.15_GRCh38_no_alt_analysis_set.2.ebwt
+├── GCA_000001405.15_GRCh38_no_alt_analysis_set.3.ebwt
+├── GCA_000001405.15_GRCh38_no_alt_analysis_set.4.ebwt
+├── GCA_000001405.15_GRCh38_no_alt_analysis_set.rev.1.ebwt
+└── GCA_000001405.15_GRCh38_no_alt_analysis_set.rev.2.ebwt
+```
 
 ### Other Available Indexes
 

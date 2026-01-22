@@ -120,17 +120,38 @@ Two modes:
 
 ## Bowtie Setup
 
-See [BOWTIE.md](BOWTIE.md) for installation instructions.
+See [BOWTIE.md](BOWTIE.md) for full installation instructions.
 
 Key points:
 - Uses **Bowtie 1** (not Bowtie 2) for short read alignment
 - Install via **conda/mamba** (NOT homebrew - that's a different tool)
-- Genome indexes: `bowtie_indexes/` directory
-- Pseudogene DBs: `probedesign/pseudogeneDBs/`
 - The test script auto-detects bowtie at `/opt/homebrew/Caskroom/miniforge/base/bin/bowtie`
-- Set `BOWTIEHOME` env var if bowtie is elsewhere
 
-Verify you have the right bowtie:
+### Required Indexes
+
+Two types of indexes are needed in `bowtie_indexes/`:
+
+1. **Pseudogene indexes** - Build from FASTA files in `probedesign/pseudogeneDBs/`:
+   ```bash
+   cd bowtie_indexes
+   bowtie-build ../probedesign/pseudogeneDBs/human.fasta humanPseudo
+   ```
+
+2. **Genome indexes** - Download pre-built:
+   ```bash
+   cd bowtie_indexes
+   curl -O ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/GRCh38_no_alt.zip
+   unzip GRCh38_no_alt.zip
+   ```
+
+### Index Naming Convention
+
+| Species | Pseudogene Index | Genome Index |
+|---------|------------------|--------------|
+| human | `humanPseudo` | `GCA_000001405.15_GRCh38_no_alt_analysis_set` |
+| mouse | `mousePseudo` | `mm10` |
+
+Verify bowtie installation:
 ```bash
 bowtie --version  # Should show "bowtie-align-s version 1.x.x"
 ```
