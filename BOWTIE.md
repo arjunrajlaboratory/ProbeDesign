@@ -6,7 +6,10 @@ This document describes how to install Bowtie and set up genome indexes for prob
 
 Bowtie is an ultrafast, memory-efficient short read aligner used by ProbeDesign to identify sequences that align to pseudogenes or multiple genomic locations. These alignments are used to mask problematic regions during probe design.
 
-**Note**: This project uses **Bowtie 1** (not Bowtie 2). Bowtie 1 is optimized for short reads (≤50bp) which matches our oligo lengths.
+**Important Notes**:
+- This project uses **Bowtie 1** (not Bowtie 2). Bowtie 1 is optimized for short reads (≤50bp) which matches our oligo lengths.
+- Install bowtie via **conda/mamba** (bioinformatics tool), NOT via homebrew (which has a different "bowtie" package)
+- You can verify you have the right bowtie by running: `bowtie --version` - it should show "bowtie-align-s version 1.x.x"
 
 ## Installation
 

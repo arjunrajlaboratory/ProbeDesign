@@ -60,23 +60,35 @@ Visual alignment showing:
 
 | Test Case | Description | Expected Match |
 |-----------|-------------|----------------|
-| `KRT19_withUTRs/` | 6 probes, pseudogene masking | 100% |
-| `CDKN1A_32/` | 32 probes, repeat masking | 100% (with genomemaskoff) |
-| `EIF1_CDS_HCR/` | HCR probes (longer oligos) | Validated |
+| `CDKN1A_32/` | 32 probes, manual repeat masking | 100% |
+| `KRT19_withUTRs/` | 6 probes, pseudogene + genome masking | 100% |
+| `EIF1_CDS_HCR/` | HCR probes (52bp oligos) | ~78% (partial expected) |
 
-### Running Test Validation
+### Running Tests
+
+Use the automated test script:
 
 ```bash
-# Basic test (no masking)
-probedesign design test_cases/KRT19_withUTRs/KRT19_withUTRs.fa --probes 6
+./run_tests.sh
+```
 
-# With repeat masking (manual)
+This will run all tests and report pass/fail. Tests require bowtie installed via conda (NOT homebrew).
+
+### Manual Test Commands
+
+```bash
+# Test 1: CDKN1A with repeatmask-file (100% match expected)
 probedesign design test_cases/CDKN1A_32/CDKN1A.fa --probes 32 \
   --repeatmask-file test_cases/CDKN1A_32/CDKN1A_repeatmasked.fa
 
-# With bowtie masking (requires bowtie + indexes)
-BOWTIEHOME=/opt/homebrew/Caskroom/miniforge/base/bin probedesign design \
-  test_cases/KRT19_withUTRs/KRT19_withUTRs.fa --probes 6 --pseudogene-mask
+# Test 2: KRT19 with bowtie masking (100% match expected)
+probedesign design test_cases/KRT19_withUTRs/KRT19_withUTRs.fa --probes 32 \
+  --pseudogene-mask --genome-mask --index-dir bowtie_indexes
+
+# Test 3: EIF1 HCR probes (78% match expected)
+probedesign design test_cases/EIF1_CDS_HCR/EIF1_Exons.fasta --probes 20 \
+  -l 52 --target-gibbs -60 --allowable-gibbs -80,-40 \
+  --pseudogene-mask --genome-mask --index-dir bowtie_indexes
 ```
 
 ## Important Implementation Details
@@ -111,10 +123,17 @@ Two modes:
 See [BOWTIE.md](BOWTIE.md) for installation instructions.
 
 Key points:
-- Uses Bowtie 1 (not Bowtie 2) for short read alignment
+- Uses **Bowtie 1** (not Bowtie 2) for short read alignment
+- Install via **conda/mamba** (NOT homebrew - that's a different tool)
 - Genome indexes: `bowtie_indexes/` directory
 - Pseudogene DBs: `probedesign/pseudogeneDBs/`
-- Set `BOWTIEHOME` env var if bowtie not in PATH
+- The test script auto-detects bowtie at `/opt/homebrew/Caskroom/miniforge/base/bin/bowtie`
+- Set `BOWTIEHOME` env var if bowtie is elsewhere
+
+Verify you have the right bowtie:
+```bash
+bowtie --version  # Should show "bowtie-align-s version 1.x.x"
+```
 
 ## Common Development Tasks
 
