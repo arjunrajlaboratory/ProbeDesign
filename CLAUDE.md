@@ -1,0 +1,187 @@
+# Claude Code Context for ProbeDesign
+
+This file provides context for Claude Code when working on this project.
+
+## Project Overview
+
+ProbeDesign is a tool for designing oligonucleotide probes for single molecule RNA FISH experiments. It was originally written in MATLAB and has been ported to Python for easier installation and use.
+
+**Key goal**: The Python implementation should produce **identical results** to the MATLAB reference implementation (`probedesign/findprobesLocal.m`).
+
+## Architecture
+
+### Python Package (`src/probedesign/`)
+
+| File | Purpose |
+|------|---------|
+| `cli.py` | Click-based command-line interface |
+| `core.py` | Main probe design algorithm (badness calculation, DP optimization) |
+| `thermodynamics.py` | Gibbs free energy and melting temperature calculations (Sugimoto 1995 params) |
+| `masking.py` | Bowtie-based sequence masking (pseudogene, genome) |
+| `sequence.py` | Sequence utilities (reverse complement, GC%, validation) |
+| `fasta.py` | FASTA file I/O with junction marker handling |
+| `output.py` | Output file generation (_oligos.txt, _seq.txt) |
+
+### MATLAB Code (`probedesign/`)
+
+| File | Purpose |
+|------|---------|
+| `findprobesLocal.m` | Main MATLAB function - **reference implementation** |
+| `thermo_RNA_DNA.m` | Thermodynamics (Sugimoto 1995 parameters) |
+| `find_best_matches.m` | Dynamic programming algorithm |
+| `pseudogeneDBs/` | Pseudogene FASTA files for masking |
+
+## Algorithm
+
+1. **Read input**: Parse FASTA, concatenate multi-entry files with `>` junction markers
+2. **Calculate badness**: For each position, compute `(gibbs - target)^2`. Positions with invalid chars or out-of-range Gibbs get `inf` badness.
+3. **Apply masking**:
+   - R mask: Repeat regions (from N's in input or separate repeatmask file)
+   - P mask: Pseudogene alignments (bowtie to pseudogene DBs)
+   - B mask: Genome alignments (bowtie to genome with multiple stringencies)
+   - F mask: Thermodynamic filtering (badness == inf)
+4. **Dynamic programming**: Find optimal probe placements minimizing average badness
+5. **Generate output**: Create oligo and sequence alignment files
+
+## Output Format
+
+### `_oligos.txt`
+Tab-separated: `index  GC%  Tm  Gibbs  sequence  name`
+
+### `_seq.txt`
+Visual alignment showing:
+- Line 1: Original sequence
+- Line 2: R mask (if repeat masking enabled)
+- Line 3+: P mask, B mask (if enabled)
+- Last mask line: F mask (thermodynamic filtering)
+- Probe annotations below each block
+
+## Test Cases (`test_cases/`)
+
+| Test Case | Description | Expected Match |
+|-----------|-------------|----------------|
+| `CDKN1A_32/` | 32 probes, manual repeat masking | 100% |
+| `KRT19_withUTRs/` | 6 probes, pseudogene + genome masking | 100% |
+| `EIF1_CDS_HCR/` | HCR probes (52bp oligos) | ~78% (partial expected) |
+
+### Running Tests
+
+Use the automated test script:
+
+```bash
+./run_tests.sh
+```
+
+This will run all tests and report pass/fail. Tests require bowtie installed via conda (NOT homebrew).
+
+### Manual Test Commands
+
+```bash
+# Test 1: CDKN1A with repeatmask-file (100% match expected)
+probedesign design test_cases/CDKN1A_32/CDKN1A.fa --probes 32 \
+  --repeatmask-file test_cases/CDKN1A_32/CDKN1A_repeatmasked.fa
+
+# Test 2: KRT19 with bowtie masking (100% match expected)
+probedesign design test_cases/KRT19_withUTRs/KRT19_withUTRs.fa --probes 32 \
+  --pseudogene-mask --genome-mask --index-dir bowtie_indexes
+
+# Test 3: EIF1 HCR probes (78% match expected)
+probedesign design test_cases/EIF1_CDS_HCR/EIF1_Exons.fasta --probes 20 \
+  -l 52 --target-gibbs -60 --allowable-gibbs -80,-40 \
+  --pseudogene-mask --genome-mask --index-dir bowtie_indexes
+```
+
+## Important Implementation Details
+
+### Thermodynamics
+
+- Uses Sugimoto 1995 RNA-DNA hybrid parameters
+- Salt concentration: 0.33 M
+- Primer concentration: 50 µM
+- Default target Gibbs: -23 kcal/mol (range: -26 to -20)
+
+### F Mask Logic
+
+The F mask shows thermodynamic filtering - positions where a probe **cannot start**:
+- `F` at position i if `badness[i] == inf` OR `i >= goodlen` (past valid positions)
+- Sequence char at position i if `badness[i]` is finite (valid probe start)
+
+This matches MATLAB `mask_string(inseq, badness==inf, 'F')`.
+
+### Junction Handling
+
+Multi-entry FASTA files use `>` to mark exon junctions. Probes cannot span junctions.
+
+### Repeat Masking
+
+Two modes:
+1. **Auto-detect**: N's in input file are treated as masked regions
+2. **Manual file**: `--repeatmask-file` provides separate file with N's marking repeats
+
+## Bowtie Setup
+
+See [BOWTIE.md](BOWTIE.md) for full installation instructions.
+
+Key points:
+- Uses **Bowtie 1** (not Bowtie 2) for short read alignment
+- Install via **conda/mamba** (NOT homebrew - that's a different tool)
+- The test script auto-detects bowtie at `/opt/homebrew/Caskroom/miniforge/base/bin/bowtie`
+
+### Required Indexes
+
+Two types of indexes are needed in `bowtie_indexes/`:
+
+1. **Pseudogene indexes** - Build from FASTA files in `probedesign/pseudogeneDBs/`:
+   ```bash
+   cd bowtie_indexes
+   bowtie-build ../probedesign/pseudogeneDBs/human.fasta humanPseudo
+   ```
+
+2. **Genome indexes** - Download pre-built:
+   ```bash
+   cd bowtie_indexes
+   curl -O ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/GRCh38_no_alt.zip
+   unzip GRCh38_no_alt.zip
+   ```
+
+### Index Naming Convention
+
+| Species | Pseudogene Index | Genome Index |
+|---------|------------------|--------------|
+| human | `humanPseudo` | `GCA_000001405.15_GRCh38_no_alt_analysis_set` |
+| mouse | `mousePseudo` | `mm10` |
+
+Verify bowtie installation:
+```bash
+bowtie --version  # Should show "bowtie-align-s version 1.x.x"
+```
+
+## Common Development Tasks
+
+### Adding a new CLI option
+
+1. Add Click option in `cli.py`
+2. Pass parameter to `design_probes()` in `core.py`
+3. Update `design_probes()` function signature and logic
+4. Update README.md and this file
+
+### Validating against MATLAB
+
+1. Run MATLAB command with specific options
+2. Save `_oligos.txt` and `_seq.txt` output
+3. Run Python with equivalent options
+4. Compare outputs with `diff`
+
+### Debugging probe differences
+
+1. Check F mask line matches (thermodynamic filtering)
+2. Check mask strings (R, P, B) match
+3. Verify badness calculation for specific positions
+4. Compare probe positions and sequences
+
+## Code Style
+
+- Python 3.8+ with type hints
+- Click for CLI
+- No external dependencies except numpy (optional)
+- Match MATLAB output format exactly for validation

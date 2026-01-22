@@ -1,0 +1,12 @@
+findprobesLocal('mouseMITF.fa',24, 'outfilename', 'mouseMITF','pseudogenemask',true,'repeatmask',true,'repeatmaskmanual',true,'repeatmaskfile','mouseMITF_repeatmasked.fa','species','mouse')
+
+Parameters:
+-----------
+input_file: mouseMITF.fa
+probe_length: 24
+outfilename: mouseMITF
+pseudogenemask: true
+repeatmask: true
+repeatmaskmanual: true
+repeatmaskfile: mouseMITF_repeatmasked.fa
+species: mouse

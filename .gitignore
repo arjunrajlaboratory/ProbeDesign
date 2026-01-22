@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.egg
+dist/
+build/
+
+# macOS
+.DS_Store
+
+# Bowtie indexes (large genome files)
+bowtie_indexes/
+*.ebwt
+*.ebwtl

@@ -1,0 +1,11 @@
+findprobesLocal('EIF1_Exons.fasta', 20, 'outfilename', 'EIF1_CDS_HCR', 'oligolength', 52, 'allowableGibbsFE', [-80, -40], 'targetGibbsFE', -60, 'repeatmask', false)
+
+Parameters:
+-----------
+input_file: EIF1_Exons.fasta
+probe_length: 20
+outfilename: EIF1_CDS_HCR
+oligolength: 52
+allowableGibbsFE: [-80, -40]
+targetGibbsFE: -60
+repeatmask: false
