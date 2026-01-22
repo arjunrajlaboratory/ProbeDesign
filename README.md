@@ -30,14 +30,31 @@ probedesign --version
 
 Masking requires [Bowtie 1](http://bowtie-bio.sourceforge.net/) and genome indexes. See [BOWTIE.md](BOWTIE.md) for detailed setup instructions.
 
+**Important**: Install bowtie via conda/mamba (NOT homebrew, which has a different tool with the same name).
+
 ```bash
-# Install bowtie via conda/mamba (recommended)
+# Install bowtie via conda/mamba
 mamba install bowtie
 
-# Download human genome index
+# Verify it's the bioinformatics bowtie
+bowtie --version  # Should show "bowtie-align-s version 1.x.x"
+
+# Create indexes directory
 mkdir -p bowtie_indexes && cd bowtie_indexes
+
+# Build pseudogene index from included FASTA files
+bowtie-build ../probedesign/pseudogeneDBs/human.fasta humanPseudo
+
+# Download human genome index (~3GB)
 curl -O ftp://ftp.ccb.jhu.edu/pub/data/bowtie_indexes/GRCh38_no_alt.zip
 unzip GRCh38_no_alt.zip
+```
+
+For other species, build the corresponding pseudogene index:
+```bash
+bowtie-build ../probedesign/pseudogeneDBs/mouse.fasta mousePseudo
+bowtie-build ../probedesign/pseudogeneDBs/elegans.fasta celegansPseudo
+bowtie-build ../probedesign/pseudogeneDBs/drosophila.fasta drosophilaPseudo
 ```
 
 ## Quick Start
