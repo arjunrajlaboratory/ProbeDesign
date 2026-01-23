@@ -66,7 +66,10 @@ probedesign design input.fa
 # With pseudogene and genome masking (recommended)
 probedesign design input.fa --pseudogene-mask --genome-mask --index-dir bowtie_indexes
 
-# With manual repeat masking (using RepeatMasker output)
+# With automatic repeat masking (requires RepeatMasker installed locally)
+probedesign design input.fa --repeatmask
+
+# With manual repeat masking (using RepeatMasker output file)
 probedesign design input.fa --repeatmask-file input_repeatmasked.fa
 
 # Full example with all options
@@ -76,6 +79,7 @@ probedesign design input.fa \
   --spacer-length 2 \
   --target-gibbs -23 \
   --allowable-gibbs -26,-20 \
+  --repeatmask \
   --pseudogene-mask \
   --genome-mask \
   --species human \
@@ -101,9 +105,10 @@ Options:
   -q, --quiet               Suppress output to stdout
   --species [human|mouse|elegans|drosophila|rat]
                             Species for masking databases (default: human)
+  --repeatmask              Run RepeatMasker automatically (requires local install)
+  --repeatmask-file PATH    FASTA file with N's marking repeat regions (manual)
   --pseudogene-mask         Mask regions that align to pseudogenes
   --genome-mask             Mask repetitive genomic regions
-  --repeatmask-file PATH    FASTA file with N's marking repeat regions (manual repeat masking)
   --index-dir PATH          Directory containing bowtie indexes
 ```
 
@@ -139,19 +144,45 @@ Masks repetitive genomic regions using multiple alignment stringencies:
 - 14-mer with threshold 500 hits
 - 16-mer with threshold 20 hits
 
+### Automatic Repeat Masking (`--repeatmask`)
+
+If you have RepeatMasker installed locally, ProbeDesign can run it automatically:
+
+```bash
+probedesign design input.fa --repeatmask --probes 32
+```
+
+**Quick Setup (Human/Mouse):**
+```bash
+# Install RepeatMasker
+mamba install -c bioconda -c conda-forge repeatmasker
+
+# Download Mammalia database (~8.9GB compressed, ~56GB extracted)
+cd /opt/homebrew/Caskroom/miniforge/base/share/RepeatMasker/Libraries/famdb
+curl -O https://www.dfam.org/releases/current/families/FamDB/dfam39_full.7.h5.gz
+gunzip dfam39_full.7.h5.gz
+```
+
+**Note:** The database requires ~65GB disk space. See [REPEATMASKER.md](REPEATMASKER.md) for detailed setup instructions, troubleshooting, and the web-based alternative if disk space is limited.
+
 ### Manual Repeat Masking (`--repeatmask-file`)
 
-For sequences with repetitive elements, you can use RepeatMasker to identify repeats and provide the masked file:
+For sequences with repetitive elements, you can provide a pre-masked file:
 
+**Option A**: Use RepeatMasker's website
 1. Upload your FASTA to [RepeatMasker's website](http://www.repeatmasker.org/)
 2. Download the masked output file (contains N's where repeats are)
 3. Use the `--repeatmask-file` option:
+
+**Option B**: Run RepeatMasker locally
+1. Run: `RepeatMasker -species human input.fa`
+2. Use the output: `probedesign design input.fa --repeatmask-file input.fa.masked`
 
 ```bash
 probedesign design input.fa --repeatmask-file input_repeatmasked.fa --output MyProbes
 ```
 
-This is equivalent to MATLAB's `repeatmaskmanual` option.
+**Note**: You cannot use both `--repeatmask` and `--repeatmask-file` together.
 
 ### Species Support
 
@@ -187,18 +218,21 @@ findprobesLocal('input.fa', 32, ...
     'species', 'human')
 ```
 
-### RepeatMasker Note (August 2024)
+### RepeatMasker Integration
 
-The automatic RepeatMasker connection no longer works. To use repeat masking:
+**Python CLI (recommended):**
 
-1. Upload your FASTA to [RepeatMasker's website](http://www.repeatmasker.org/)
-2. Download the masked output file (contains N's where repeats were found)
-3. Use `repeatmaskmanual` in MATLAB or `--repeatmask-file` in Python:
+Option 1 - Automatic (requires local RepeatMasker):
+```bash
+probedesign design mCherry.fasta --repeatmask --probes 32
+```
 
-**Python (recommended):**
+Option 2 - Manual (using pre-masked file):
 ```bash
 probedesign design mCherry.fasta --repeatmask-file mCherry_repeatmasked.fa --output mCherry_probes
 ```
+
+See [REPEATMASKER.md](REPEATMASKER.md) for RepeatMasker installation instructions.
 
 **MATLAB:**
 ```matlab
@@ -233,6 +267,7 @@ ProbeDesign/
 ├── bowtie_indexes/           # Genome indexes (gitignored)
 ├── pyproject.toml            # Python package config
 ├── BOWTIE.md                 # Bowtie setup instructions
+├── REPEATMASKER.md           # RepeatMasker setup instructions
 └── TEST.md                   # Testing documentation
 ```
 

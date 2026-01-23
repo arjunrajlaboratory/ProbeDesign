@@ -85,6 +85,11 @@ def main():
     type=click.Path(exists=True),
     help='FASTA file with N\'s marking repeat regions (for manual repeat masking)'
 )
+@click.option(
+    '--repeatmask/--no-repeatmask',
+    default=False,
+    help='Run RepeatMasker to automatically mask repeat regions (default: off)'
+)
 def design(
     input_file: str,
     n_probes: int,
@@ -99,6 +104,7 @@ def design(
     genome_mask: bool,
     index_dir: str,
     repeatmask_file: str,
+    repeatmask: bool,
 ):
     """Design probes for a target sequence.
 
@@ -127,6 +133,27 @@ def design(
     if output is None:
         output = Path(input_file).stem
 
+    # Handle --repeatmask flag: run RepeatMasker and use output as repeatmask_file
+    actual_repeatmask_file = repeatmask_file
+    if repeatmask:
+        if repeatmask_file:
+            raise click.BadParameter(
+                "Cannot use both --repeatmask and --repeatmask-file. "
+                "Choose one or the other."
+            )
+        if not quiet:
+            click.echo(f"Running RepeatMasker on {input_file}...")
+        try:
+            from .masking import run_repeatmasker
+            masked_file = run_repeatmasker(Path(input_file), species=species)
+            actual_repeatmask_file = str(masked_file)
+            if not quiet:
+                click.echo(f"RepeatMasker output: {masked_file}")
+        except FileNotFoundError as e:
+            raise click.ClickException(str(e))
+        except RuntimeError as e:
+            raise click.ClickException(str(e))
+
     # Run probe design
     if not quiet:
         click.echo(f"Designing probes for {input_file}...")
@@ -143,7 +170,7 @@ def design(
         pseudogene_mask=pseudogene_mask,
         genome_mask=genome_mask,
         index_dir=index_dir,
-        repeatmask_file=repeatmask_file,
+        repeatmask_file=actual_repeatmask_file,
     )
 
     if not result.probes:

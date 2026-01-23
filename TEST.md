@@ -19,15 +19,18 @@ Last validated: January 2025
 | Test Case | Description | Match Rate | Status |
 |-----------|-------------|------------|--------|
 | CDKN1A_32 (repeatmask-file) | Manual repeat masking | **32/32 (100%)** | ✅ PASS |
+| CDKN1A_32 (--repeatmask) | Automatic RepeatMasker | **32/32 (100%)** | ✅ PASS |
 | KRT19_withUTRs (with masking) | Pseudogene + genome masking | **6/6 (100%)** | ✅ PASS |
 | EIF1_CDS_HCR (HCR probes) | 52bp HCR probes | **15/19 (78%)** | ✅ PASS (partial expected) |
 
 ### Key Findings
 
 1. **Exact match achieved** for CDKN1A_32 using `--repeatmask-file` option
-2. **Exact match achieved** for KRT19_withUTRs with `--pseudogene-mask --genome-mask`
-3. **HCR probes** show minor position differences (78% match) which is expected due to longer oligos and tie-breaking in DP algorithm
-4. **Thermodynamics** calculations match MATLAB exactly (Gibbs FE within 0.01 kcal/mol)
+2. **Exact match achieved** for CDKN1A_32 using `--repeatmask` (automatic RepeatMasker)
+3. **Exact match achieved** for KRT19_withUTRs with `--pseudogene-mask --genome-mask`
+4. **HCR probes** show minor position differences (78% match) which is expected due to longer oligos and tie-breaking in DP algorithm
+5. **Thermodynamics** calculations match MATLAB exactly (Gibbs FE within 0.01 kcal/mol)
+6. **RepeatMasker integration** produces identical output to pre-masked files (175 masked positions in CDKN1A)
 
 ## Prerequisites
 
@@ -48,6 +51,17 @@ Last validated: January 2025
 3. **Required bowtie indexes in `bowtie_indexes/`**:
    - `humanPseudo` - Human pseudogene database (built from `probedesign/pseudogeneDBs/`)
    - `GCA_000001405.15_GRCh38_no_alt_analysis_set` - Human genome (GRCh38)
+
+4. **RepeatMasker** (optional, for `--repeatmask` tests):
+   ```bash
+   # See REPEATMASKER.md for full setup
+   mamba install -c bioconda -c conda-forge repeatmasker
+
+   # Download Mammalia database (~56GB extracted)
+   cd /opt/homebrew/Caskroom/miniforge/base/share/RepeatMasker/Libraries/famdb
+   curl -O https://www.dfam.org/releases/current/families/FamDB/dfam39_full.7.h5.gz
+   gunzip dfam39_full.7.h5.gz
+   ```
 
 ## Test Cases
 
@@ -141,6 +155,35 @@ probedesign design test_cases/EIF1_CDS_HCR/EIF1_Exons.fasta \
 ```
 
 **Expected**: 19 probes, ~75-80% match (partial match expected due to DP tie-breaking with longer oligos)
+
+### 4. CDKN1A_32 with Automatic RepeatMasker
+
+**Description**: Tests the `--repeatmask` option for automatic repeat masking using local RepeatMasker installation. Should produce identical results to using `--repeatmask-file`.
+
+**Python command**:
+```bash
+probedesign design test_cases/CDKN1A_32/CDKN1A.fa \
+    -n 32 \
+    --repeatmask \
+    -o CDKN1A_repeatmask_test
+```
+
+**Expected**: 32 probes, 100% match with `--repeatmask-file` version
+
+**Verification**:
+```bash
+# Compare with manual repeatmask-file version
+probedesign design test_cases/CDKN1A_32/CDKN1A.fa \
+    -n 32 \
+    --repeatmask-file test_cases/CDKN1A_32/CDKN1A_repeatmasked.fa \
+    -o CDKN1A_manual_test
+
+# Compare probe sequences (should be identical)
+diff <(cut -f5 CDKN1A_repeatmask_test_oligos.txt) \
+     <(cut -f5 CDKN1A_manual_test_oligos.txt)
+```
+
+**Prerequisites**: Requires RepeatMasker with Dfam partition 7 (Mammalia) installed. See [REPEATMASKER.md](REPEATMASKER.md).
 
 ## Running Tests
 

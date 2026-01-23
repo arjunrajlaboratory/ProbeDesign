@@ -1,13 +1,15 @@
-"""Sequence masking using bowtie alignment.
+"""Sequence masking using bowtie alignment and RepeatMasker.
 
 This module provides functions to mask regions of a sequence that align to:
 - Pseudogene databases (to avoid cross-hybridization)
 - Genome databases (to avoid repetitive regions)
+- Repeat regions (using RepeatMasker)
 
 The masking logic mirrors the MATLAB findprobesLocal.m implementation.
 """
 
 import os
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -396,3 +398,174 @@ def create_full_mask(
             print(f"Warning: Genome masking failed: {e}")
 
     return combined, mask_strings
+
+
+def find_repeatmasker() -> str:
+    """Find the RepeatMasker executable.
+
+    Searches in order:
+    1. Standard conda/mamba location
+    2. System PATH
+
+    Returns:
+        Path to RepeatMasker executable
+
+    Raises:
+        FileNotFoundError: If RepeatMasker cannot be found
+    """
+    # Check standard conda location first
+    conda_path = Path("/opt/homebrew/Caskroom/miniforge/base/share/RepeatMasker/RepeatMasker")
+    if conda_path.exists():
+        return str(conda_path)
+
+    # Check in PATH using which
+    try:
+        result = subprocess.run(
+            ["which", "RepeatMasker"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError:
+        pass
+
+    # Check common locations
+    locations = [
+        "/usr/local/bin/RepeatMasker",
+        os.path.expanduser("~/RepeatMasker/RepeatMasker"),
+    ]
+
+    for loc in locations:
+        if os.path.exists(loc):
+            return loc
+
+    raise FileNotFoundError(
+        "Could not find RepeatMasker executable. "
+        "Install with: mamba install -c bioconda -c conda-forge repeatmasker"
+    )
+
+
+def run_repeatmasker(
+    fasta_path: Path,
+    species: str = "human",
+    output_dir: Optional[Path] = None,
+) -> Path:
+    """Run RepeatMasker on input FASTA and return path to masked file.
+
+    RepeatMasker outputs a .masked file with repeat regions replaced by N's,
+    which matches the format expected by probedesign's --repeatmask-file option.
+
+    Args:
+        fasta_path: Path to input FASTA file
+        species: Species for repeat library (default: human)
+        output_dir: Directory for output files (default: temp directory)
+
+    Returns:
+        Path to masked FASTA file (input.fa.masked)
+
+    Raises:
+        FileNotFoundError: If RepeatMasker is not installed
+        RuntimeError: If RepeatMasker fails to run
+    """
+    fasta_path = Path(fasta_path)
+
+    # Find RepeatMasker
+    repeatmasker_path = find_repeatmasker()
+
+    # Create output directory if not specified
+    if output_dir is None:
+        output_dir = Path(tempfile.mkdtemp(prefix="repeatmasker_"))
+    else:
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Get conda base path to set Python environment
+    conda_bin = Path(repeatmasker_path).parent.parent.parent / "bin"
+
+    # Build command
+    # -species: specify species for repeat library
+    # -dir: output directory
+    # -xsmall: mask repeats with N's (soft masking produces lowercase, but
+    #          the default without -xsmall is hard masking with N's which is what we want)
+    cmd = [
+        repeatmasker_path,
+        "-species", species,
+        "-dir", str(output_dir),
+        str(fasta_path)
+    ]
+
+    # Set up environment with conda Python in PATH
+    env = os.environ.copy()
+    if conda_bin.exists():
+        env["PATH"] = str(conda_bin) + ":" + env.get("PATH", "")
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env
+        )
+
+        if result.returncode != 0:
+            # Check for specific error about missing partition
+            if "partition" in result.stderr.lower() and "absent" in result.stderr.lower():
+                raise RuntimeError(
+                    f"RepeatMasker database partition for species '{species}' is not installed.\n"
+                    "Please download the required Dfam partition. See REPEATMASKER.md for instructions."
+                )
+            raise RuntimeError(
+                f"RepeatMasker failed with exit code {result.returncode}:\n"
+                f"stdout: {result.stdout}\n"
+                f"stderr: {result.stderr}"
+            )
+
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"RepeatMasker not found: {e}")
+
+    # Find the output masked file
+    masked_file = output_dir / f"{fasta_path.name}.masked"
+
+    if not masked_file.exists():
+        # RepeatMasker may not create .masked if no repeats found
+        # In this case, copy the original file
+        shutil.copy(fasta_path, masked_file)
+
+    return masked_file
+
+
+def repeatmasker_mask_to_sequence(
+    original_seq: str,
+    masked_fasta_path: Path,
+) -> List[int]:
+    """Convert RepeatMasker output to a binary mask.
+
+    Compares the masked FASTA (with N's) to the original sequence
+    to create a binary mask where 1 = repeat region.
+
+    Args:
+        original_seq: Original sequence (lowercase)
+        masked_fasta_path: Path to RepeatMasker output (.masked file)
+
+    Returns:
+        Binary mask (1 = repeat, 0 = non-repeat)
+    """
+    from .fasta import read_fasta, sequences_to_single_string
+    from .sequence import clean_sequence
+
+    # Read masked sequence
+    _, masked_seqs = read_fasta(str(masked_fasta_path))
+    masked_seq = clean_sequence(sequences_to_single_string(masked_seqs))
+
+    # Create mask by comparing sequences
+    # N's in the masked sequence indicate repeats
+    mask = []
+    for i in range(len(original_seq)):
+        if i < len(masked_seq) and masked_seq[i].upper() == 'N':
+            mask.append(1)
+        else:
+            mask.append(0)
+
+    return mask
